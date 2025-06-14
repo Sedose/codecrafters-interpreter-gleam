@@ -2,10 +2,17 @@ import gleam/list
 import gleam/string
 
 pub type Token {
-  LeftParen(value: String)
-  RightParen(value: String)
-  LeftBrace(value: String)
-  RightBrace(value: String)
+  LeftParen
+  RightParen
+  LeftBrace
+  RightBrace
+  Comma
+  Dot
+  Minus
+  Plus
+  Semicolon
+  Star
+  Slash
   Eof
 }
 
@@ -22,10 +29,17 @@ fn scan_characters_recursive(
     [] -> list.append(collected, [Eof])
     [char, ..rest] -> {
       let new_collected = case char {
-        "(" -> list.append(collected, [LeftParen(char)])
-        ")" -> list.append(collected, [RightParen(char)])
-        "{" -> list.append(collected, [LeftBrace(char)])
-        "}" -> list.append(collected, [RightBrace(char)])
+        "(" -> list.append(collected, [LeftParen])
+        ")" -> list.append(collected, [RightParen])
+        "{" -> list.append(collected, [LeftBrace])
+        "}" -> list.append(collected, [RightBrace])
+        "+" -> list.append(collected, [Plus])
+        "-" -> list.append(collected, [Minus])
+        "," -> list.append(collected, [Comma])
+        "." -> list.append(collected, [Dot])
+        ";" -> list.append(collected, [Semicolon])
+        "*" -> list.append(collected, [Star])
+        "/" -> list.append(collected, [Slash])
         _ -> collected
       }
       scan_characters_recursive(rest, new_collected)

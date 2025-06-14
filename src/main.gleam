@@ -3,7 +3,8 @@ import external_things.{exit}
 import gleam/io
 import simplifile
 import tokenizer.{
-  type Token, Eof, LeftBrace, LeftParen, RightBrace, RightParen, tokenize,
+  type Token, Comma, Dot, Eof, LeftBrace, LeftParen, Minus, Plus, RightBrace,
+  RightParen, Semicolon, Star, Slash, tokenize,
 }
 
 pub fn main() -> Nil {
@@ -31,10 +32,17 @@ fn print_tokens(tokens: List(Token)) -> Nil {
     [] -> Nil
     [token, ..rest] -> {
       io.println(case token {
-        LeftParen(c) -> "LEFT_PAREN " <> c <> " null"
-        RightParen(c) -> "RIGHT_PAREN " <> c <> " null"
-        LeftBrace(c) -> "LEFT_BRACE " <> c <> " null"
-        RightBrace(c) -> "RIGHT_BRACE " <> c <> " null"
+        LeftParen -> "LEFT_PAREN ( null"
+        RightParen -> "RIGHT_PAREN ) null"
+        LeftBrace -> "LEFT_BRACE { null"
+        RightBrace -> "RIGHT_BRACE } null"
+        Comma -> "COMMA , null"
+        Dot -> "DOT . null"
+        Minus -> "MINUS - null"
+        Semicolon -> "SEMICOLON ; null"
+        Plus -> "PLUS + null"
+        Star -> "STAR * null"
+        Slash -> "DIVIDE / null"
         Eof -> "EOF  null"
       })
       print_tokens(rest)
