@@ -28,21 +28,25 @@ fn scan_characters_recursive(
   case graphemes {
     [] -> list.append(collected, [Eof])
     [char, ..rest] -> {
-      let new_collected = case char {
-        "(" -> list.append(collected, [LeftParen])
-        ")" -> list.append(collected, [RightParen])
-        "{" -> list.append(collected, [LeftBrace])
-        "}" -> list.append(collected, [RightBrace])
-        "+" -> list.append(collected, [Plus])
-        "-" -> list.append(collected, [Minus])
-        "," -> list.append(collected, [Comma])
-        "." -> list.append(collected, [Dot])
-        ";" -> list.append(collected, [Semicolon])
-        "*" -> list.append(collected, [Star])
-        "/" -> list.append(collected, [Slash])
-        _ -> collected
-      }
-      scan_characters_recursive(rest, new_collected)
+      let updated = list.append(collected, classify_char(char))
+      scan_characters_recursive(rest, updated)
     }
+  }
+}
+
+fn classify_char(char: String) -> List(Token) {
+  case char {
+    "(" -> [LeftParen]
+    ")" -> [RightParen]
+    "{" -> [LeftBrace]
+    "}" -> [RightBrace]
+    "+" -> [Plus]
+    "-" -> [Minus]
+    "," -> [Comma]
+    "." -> [Dot]
+    ";" -> [Semicolon]
+    "*" -> [Star]
+    "/" -> [Slash]
+    _   -> []
   }
 }
