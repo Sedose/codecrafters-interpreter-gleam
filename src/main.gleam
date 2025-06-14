@@ -1,28 +1,21 @@
-import gleam/io
-import gleam/string
-
 import argv
+import external_things.{exit}
+import gleam/io
 import simplifile
+import tokenizer.{
+  type Token, Eof, LeftBrace, LeftParen, RightBrace, RightParen, tokenize,
+}
 
-pub fn main() {
-  // You can use print statements as follows for debugging, they'll be visible when running tests.
-  io.println_error("Logs from your program will appear here!")
-
-  let args = argv.load().arguments
-
-  case args {
+pub fn main() -> Nil {
+  case argv.load().arguments {
     ["tokenize", filename] -> {
       case simplifile.read(filename) {
         Ok(contents) -> {
-          case string.length(contents) {
-            // Uncomment this line to pass the first stage
-            // 0 -> io.println("EOF  null")
-            _ -> io.println_error("TODO: Implement scanner!")
-          }
+          tokenize(contents)
+          |> print_tokens
         }
         Error(error) -> {
-          io.println_error("Error: " <> simplifile.describe_error(error))
-          exit(1)
+          io.println_error(simplifile.describe_error(error))
         }
       }
     }
@@ -33,5 +26,18 @@ pub fn main() {
   }
 }
 
-@external(erlang, "erlang", "halt")
-pub fn exit(code: Int) -> Nil
+fn print_tokens(tokens: List(Token)) -> Nil {
+  case tokens {
+    [] -> Nil
+    [token, ..rest] -> {
+      io.println(case token {
+        LeftParen(c) -> "LEFT_PAREN " <> c <> " null"
+        RightParen(c) -> "RIGHT_PAREN " <> c <> " null"
+        LeftBrace(c) -> "LEFT_BRACE " <> c <> " null"
+        RightBrace(c) -> "RIGHT_BRACE " <> c <> " null"
+        Eof -> "EOF  null"
+      })
+      print_tokens(rest)
+    }
+  }
+}
