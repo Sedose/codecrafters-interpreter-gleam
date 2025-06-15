@@ -1,0 +1,61 @@
+000000014A1F1C78: i_func_info_IaaI 0 `tokenizer` `scan_characters_recursive` 2 
+000000014A1F1CA0: is_nonempty_list_allocate_frtt f(000000014A1F1FB0) r(0) 2 2 
+000000014A1F1CB8: move_xy x(1) y(1) 
+000000014A1F1CC8: get_list_rry r(0) r(0) y(0) 
+000000014A1F1CD8: i_bs_start_match3_xtjd x(0) 1 j(000000014A1F1F88) x(0) 
+000000014A1F1CF8: i_bs_ensure_bits_read_xtf x(0) 8 f(000000014A1F1F88) 
+000000014A1F1D10: i_bs_extract_integer_td 8 x(1) 
+000000014A1F1D20: i_select_val_lins_xfI x(1) f(000000014A1F1F88) 6 `40` `41` `43` `123` `125` `-1` f(000000014A1F1F20) f(000000014A1F1EB8) f(000000014A1F1E50) f(000000014A1F1DE8) f(000000014A1F1D80) f(000000014A1F1F88) 
+000000014A1F1D80: bs_test_zero_tail2_fx f(000000014A1F1F88) x(0) 
+000000014A1F1D90: move_x1_c `[right_brace]` 
+000000014A1F1DA0: move_yr y(1) r(0) 
+000000014A1F1DB0: i_init_y y(1) 
+000000014A1F1DC0: i_call_ext_e exp(`'gleam@list'`:`append`/2) 
+000000014A1F1DD0: move_jump_fxx f(000000014A1F1F98) x(0) x(1) 
+000000014A1F1DE8: bs_test_zero_tail2_fx f(000000014A1F1F88) x(0) 
+000000014A1F1DF8: move_x1_c `[left_brace]` 
+000000014A1F1E08: move_yr y(1) r(0) 
+000000014A1F1E18: i_init_y y(1) 
+000000014A1F1E28: i_call_ext_e exp(`'gleam@list'`:`append`/2) 
+000000014A1F1E38: move_jump_fxx f(000000014A1F1F98) x(0) x(1) 
+000000014A1F1E50: bs_test_zero_tail2_fx f(000000014A1F1F88) x(0) 
+000000014A1F1E60: move_x1_c `[plus]` 
+000000014A1F1E70: move_yr y(1) r(0) 
+000000014A1F1E80: i_init_y y(1) 
+000000014A1F1E90: i_call_ext_e exp(`'gleam@list'`:`append`/2) 
+000000014A1F1EA0: move_jump_fxx f(000000014A1F1F98) x(0) x(1) 
+000000014A1F1EB8: bs_test_zero_tail2_fx f(000000014A1F1F88) x(0) 
+000000014A1F1EC8: move_x1_c `[right_paren]` 
+000000014A1F1ED8: move_yr y(1) r(0) 
+000000014A1F1EE8: i_init_y y(1) 
+000000014A1F1EF8: i_call_ext_e exp(`'gleam@list'`:`append`/2) 
+000000014A1F1F08: move_jump_fxx f(000000014A1F1F98) x(0) x(1) 
+000000014A1F1F20: bs_test_zero_tail2_fx f(000000014A1F1F88) x(0) 
+000000014A1F1F30: move_x1_c `[left_paren]` 
+000000014A1F1F40: move_yr y(1) r(0) 
+000000014A1F1F50: i_init_y y(1) 
+000000014A1F1F60: i_call_ext_e exp(`'gleam@list'`:`append`/2) 
+000000014A1F1F70: move_jump_fxx f(000000014A1F1F98) x(0) x(1) 
+000000014A1F1F88: move_yx y(1) x(1) 
+000000014A1F1F98: move_call_last_yfQ y(0) loc(`tokenizer`:`scan_characters_recursive`/2) 2 
+000000014A1F1FB0: is_nil_fx f(000000014A1F1FE8) x(0) 
+000000014A1F1FC0: move_shift_cxx `[eof]` x(1) x(0) 
+000000014A1F1FD8: i_call_ext_only_e exp(`'gleam@list'`:`append`/2) 
+000000014A1F1FE8: case_end_x x(0) 
+
+000000014A1F1FF8: i_func_info_IaaI 0 `tokenizer` `tokenize` 1 
+000000014A1F2020: allocate_tt 0 1 
+000000014A1F2030: i_call_ext_e exp(`'gleam@string'`:`to_graphemes`/1) 
+000000014A1F2040: move_nx `[]` x(1) 
+000000014A1F2050: i_call_last_fQ loc(`tokenizer`:`scan_characters_recursive`/2) 0 
+
+000000014A1F2060: i_func_info_IaaI 0 `tokenizer` `module_info` 0 
+000000014A1F2088: move_cr `tokenizer` r(0) 
+000000014A1F2098: call_light_bif_only_be bif(`erlang`:`get_module_info`/1) exp(`erlang`:`get_module_info`/1) 
+000000014A1F20B0: deallocate_return_Q 0 
+
+000000014A1F20C0: i_func_info_IaaI 0 `tokenizer` `module_info` 1 
+000000014A1F20E8: move_shift_cxx `tokenizer` x(0) x(1) 
+000000014A1F2100: call_light_bif_only_be bif(`erlang`:`get_module_info`/2) exp(`erlang`:`get_module_info`/2) 
+000000014A1F2118: deallocate_return_Q 0 
+

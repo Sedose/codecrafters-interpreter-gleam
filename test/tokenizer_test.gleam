@@ -1,44 +1,64 @@
 import gleeunit/should
+import line_number.{from_int}
 import tokenizer.{
-  type Token, Eof, LeftBrace, LeftParen, Plus, RightBrace, RightParen, tokenize,
+  type Token, type TokenizationError, Eof, LeftBrace, LeftParen, Plus,
+  RightBrace, RightParen, Semicolon, TokenizationErrorData, Star, tokenize,
 }
 
 type TestCase {
-  TestCase(name: String, input: String, expected: List(Token))
+  SuccessTestCase(name: String, input: String, expected_tokens: List(Token))
+  WithErrorsTestCase(
+    name: String,
+    input: String,
+    expected_tokens: List(Token),
+    expected_errors: List(TokenizationError),
+  )
 }
 
 fn get_test_cases() -> List(TestCase) {
   [
-    TestCase(name: "empty string", input: "", expected: [Eof]),
-    TestCase(name: "single left paren", input: "(", expected: [LeftParen, Eof]),
-    TestCase(name: "single right paren", input: ")", expected: [RightParen, Eof]),
-    TestCase(name: "single left brace", input: "{", expected: [LeftBrace, Eof]),
-    TestCase(name: "single right brace", input: "}", expected: [RightBrace, Eof]),
-    TestCase(name: "matching parens", input: "()", expected: [
+    SuccessTestCase(name: "empty string", input: "", expected_tokens: [Eof]),
+    SuccessTestCase(name: "single left paren", input: "(", expected_tokens: [
+      LeftParen,
+      Eof,
+    ]),
+    SuccessTestCase(name: "single right paren", input: ")", expected_tokens: [
+      RightParen,
+      Eof,
+    ]),
+    SuccessTestCase(name: "single left brace", input: "{", expected_tokens: [
+      LeftBrace,
+      Eof,
+    ]),
+    SuccessTestCase(name: "single right brace", input: "}", expected_tokens: [
+      RightBrace,
+      Eof,
+    ]),
+    SuccessTestCase(name: "matching parens", input: "()", expected_tokens: [
       LeftParen,
       RightParen,
       Eof,
     ]),
-    TestCase(name: "matching braces", input: "{}", expected: [
+    SuccessTestCase(name: "matching braces", input: "{}", expected_tokens: [
       LeftBrace,
       RightBrace,
       Eof,
     ]),
-    TestCase(name: "mixed brackets", input: "({)}", expected: [
+    SuccessTestCase(name: "mixed brackets", input: "({)}", expected_tokens: [
       LeftParen,
       LeftBrace,
       RightParen,
       RightBrace,
       Eof,
     ]),
-    TestCase(name: "nested brackets", input: "{()}", expected: [
+    SuccessTestCase(name: "nested brackets", input: "{()}", expected_tokens: [
       LeftBrace,
       LeftParen,
       RightParen,
       RightBrace,
       Eof,
     ]),
-    TestCase(name: "multiple pairs", input: "(){}()", expected: [
+    SuccessTestCase(name: "multiple pairs", input: "(){}()", expected_tokens: [
       LeftParen,
       RightParen,
       LeftBrace,
@@ -47,41 +67,57 @@ fn get_test_cases() -> List(TestCase) {
       RightParen,
       Eof,
     ]),
-    TestCase(name: "ignores letters", input: "a(b)c", expected: [
+    SuccessTestCase(name: "ignores letters", input: "a(b)c", expected_tokens: [
       LeftParen,
       RightParen,
       Eof,
     ]),
-    TestCase(name: "ignores numbers", input: "1(2)3", expected: [
+    SuccessTestCase(name: "ignores numbers", input: "1(2)3", expected_tokens: [
       LeftParen,
       RightParen,
       Eof,
     ]),
-    TestCase(name: "ignores whitespace", input: " ( ) { } ", expected: [
-      LeftParen,
-      RightParen,
-      LeftBrace,
-      RightBrace,
-      Eof,
-    ]),
-    TestCase(name: "ignores newlines and tabs", input: "(\n)\t{\r}", expected: [
-      LeftParen,
-      RightParen,
-      LeftBrace,
-      RightBrace,
-      Eof,
-    ]),
-    TestCase(name: "ignores special characters", input: "@(#)$%^&*", expected: [
-      LeftParen,
-      RightParen,
-      Eof,
-    ]),
-    TestCase(
+    SuccessTestCase(
+      name: "ignores whitespace",
+      input: " ( ) { } ",
+      expected_tokens: [LeftParen, RightParen, LeftBrace, RightBrace, Eof],
+    ),
+    SuccessTestCase(
+      name: "ignores newlines and tabs",
+      input: "(\n)\t{\r}",
+      expected_tokens: [LeftParen, RightParen, LeftBrace, RightBrace, Eof],
+    ),
+    SuccessTestCase(
       name: "complex mixed content",
       input: "function() { return value; }",
-      expected: [LeftParen, RightParen, LeftBrace, RightBrace, Eof],
+      expected_tokens: [
+        LeftParen,
+        RightParen,
+        LeftBrace,
+        Semicolon,
+        RightBrace,
+        Eof,
+      ],
     ),
-    TestCase(name: "plus", input: "+", expected: [Plus, Eof]),
+    SuccessTestCase(name: "plus", input: "+", expected_tokens: [Plus, Eof]),
+    WithErrorsTestCase(
+      name: "Unknown tokens",
+      input: "{}🤡",
+      expected_tokens: [LeftBrace, RightBrace, Eof],
+      expected_errors: [
+        TokenizationErrorData(line_number: from_int(1), unexpected_char: "🤡"),
+      ],
+    ),
+    WithErrorsTestCase(
+      name: "Unknown tokens",
+      input: "{}🤡\n{🍏}\n*🔥",
+      expected_tokens: [LeftBrace, RightBrace, LeftBrace, RightBrace, Star, Eof],
+      expected_errors: [
+        TokenizationErrorData(line_number: from_int(1), unexpected_char: "🤡"),
+        TokenizationErrorData(line_number: from_int(2), unexpected_char: "🍏"),
+        TokenizationErrorData(line_number: from_int(3), unexpected_char: "🔥"),
+      ],
+    ),
   ]
 }
 
@@ -93,9 +129,18 @@ pub fn tokenize_test() {
 fn run_test_cases(test_cases: List(TestCase)) -> Nil {
   case test_cases {
     [] -> Nil
-    [TestCase(_name, input, expected), ..rest] -> {
-      let actual = tokenize(input)
-      should.equal(actual, expected)
+    [SuccessTestCase(_name, input, expected_tokens), ..rest] -> {
+      let tokenization_result = tokenize(input)
+      let actual_tokens = tokenization_result.tokens
+      should.equal(actual_tokens, expected_tokens)
+      run_test_cases(rest)
+    }
+    [WithErrorsTestCase(_name, input, expected_tokens, expected_errors), ..rest] -> {
+      let tokenization_result = tokenize(input)
+      let actual_tokens = tokenization_result.tokens
+      let actual_errors = tokenization_result.errors
+      should.equal(actual_tokens, expected_tokens)
+      should.equal(actual_errors, expected_errors)
       run_test_cases(rest)
     }
   }
