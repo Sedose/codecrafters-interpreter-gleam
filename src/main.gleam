@@ -1,7 +1,7 @@
-import gleam/list
 import argv
 import external_things.{exit}
 import gleam/io
+import gleam/list
 import printer.{print}
 import simplifile
 import tokenizer.{tokenize}
@@ -21,7 +21,7 @@ fn handle_tokenize(filename: String) -> Nil {
     Ok(contents) -> {
       let tokenization_result = tokenize(contents)
       print(tokenization_result)
-      case  tokenization_result.errors |> list.is_empty {
+      case tokenization_result.errors |> list.is_empty {
         True -> Nil
         False -> exit(65)
       }

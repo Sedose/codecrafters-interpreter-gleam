@@ -1,6 +1,6 @@
 import gleam/list
-import gleam/string
 import gleam/option.{type Option, None, Some}
+import gleam/string
 
 pub type Token {
   LeftParen
@@ -28,7 +28,7 @@ pub type TokenizationResult {
 
 pub type TokenizerState {
   TokenizerState(
-    line:   Int,
+    line: Int,
     tokens: List(Token),
     errors: List(TokenizationError),
   )
@@ -49,8 +49,7 @@ fn classify_fold(state: TokenizerState, char: String) -> TokenizerState {
   case state {
     TokenizerState(line, tokens, errors) ->
       case classify_char(char) {
-        Some(NewLine) ->
-          TokenizerState(line + 1, tokens, errors)
+        Some(NewLine) -> TokenizerState(line + 1, tokens, errors)
 
         Some(token) -> {
           let updated_tokens = tokens |> list.append([token])
@@ -68,18 +67,18 @@ fn classify_fold(state: TokenizerState, char: String) -> TokenizerState {
 
 fn classify_char(char: String) -> Option(Token) {
   case char {
-    "("  -> Some(LeftParen)
-    ")"  -> Some(RightParen)
-    "{"  -> Some(LeftBrace)
-    "}"  -> Some(RightBrace)
-    "+"  -> Some(Plus)
-    "-"  -> Some(Minus)
-    ","  -> Some(Comma)
-    "."  -> Some(Dot)
-    ";"  -> Some(Semicolon)
-    "*"  -> Some(Star)
-    "/"  -> Some(Slash)
+    "(" -> Some(LeftParen)
+    ")" -> Some(RightParen)
+    "{" -> Some(LeftBrace)
+    "}" -> Some(RightBrace)
+    "+" -> Some(Plus)
+    "-" -> Some(Minus)
+    "," -> Some(Comma)
+    "." -> Some(Dot)
+    ";" -> Some(Semicolon)
+    "*" -> Some(Star)
+    "/" -> Some(Slash)
     "\n" -> Some(NewLine)
-    _    -> None
+    _ -> None
   }
 }

@@ -1,7 +1,7 @@
 import gleeunit/should
 import tokenizer.{
   type Token, type TokenizationError, Eof, LeftBrace, LeftParen, Plus,
-  RightBrace, RightParen, Semicolon, UnrecognizedChar, Star, tokenize,
+  RightBrace, RightParen, Semicolon, Star, UnrecognizedChar, tokenize,
 }
 
 type TestCase {
@@ -103,9 +103,7 @@ fn get_test_cases() -> List(TestCase) {
       name: "Unknown tokens",
       input: "{}🤡",
       expected_tokens: [LeftBrace, RightBrace, Eof],
-      expected_errors: [
-        UnrecognizedChar(line_number: 1, unexpected_char: "🤡"),
-      ],
+      expected_errors: [UnrecognizedChar(line_number: 1, unexpected_char: "🤡")],
     ),
     WithErrorsTestCase(
       name: "Unknown tokens",
