@@ -41,10 +41,13 @@ fn scan(
   case chars {
     [] -> {
       let tokens = list.reverse([Eof, ..tokens_rev])
-      TokenizationResult(tokens, errors)
+      let errs = list.reverse(errors)
+      TokenizationResult(tokens, errs)
     }
     ["=", "=", ..rest] -> scan(line, rest, [EqualEqual, ..tokens_rev], errors)
+
     ["\n", ..rest] -> scan(line + 1, rest, [NewLine, ..tokens_rev], errors)
+
     ["=", ..rest] -> scan(line, rest, [Equal, ..tokens_rev], errors)
     ["(", ..rest] -> scan(line, rest, [LeftParen, ..tokens_rev], errors)
     [")", ..rest] -> scan(line, rest, [RightParen, ..tokens_rev], errors)
@@ -58,7 +61,6 @@ fn scan(
     ["*", ..rest] -> scan(line, rest, [Star, ..tokens_rev], errors)
     ["/", ..rest] -> scan(line, rest, [Slash, ..tokens_rev], errors)
 
-    // ── Anything else is unrecognised ────────────────────────────────────────
     [ch, ..rest] ->
       scan(line, rest, tokens_rev, [UnrecognizedChar(line, ch), ..errors])
   }
