@@ -1,6 +1,5 @@
 import gleam/int
 import gleam/io
-import line_number.{to_int}
 import tokenizer.{
   type Token, type TokenizationError, type TokenizationResult, Comma, Dot, Eof,
   LeftBrace, LeftParen, Minus, NewLine, Plus, RightBrace, RightParen, Semicolon,
@@ -51,7 +50,7 @@ fn print_errors(errors: List(TokenizationError)) -> Nil {
 }
 
 fn format_error(error: TokenizationError) -> String {
-  let line_number = error.line_number |> to_int |> int.to_string
+  let line_number = error.line_number |> int.to_string
   let unexpected_char = error.unexpected_char
   "[line "
   <> line_number

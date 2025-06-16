@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/string
-import line_number.{type LineNumber, from_int}
 
 pub type Token {
   LeftParen
@@ -19,77 +18,67 @@ pub type Token {
 }
 
 pub type TokenizationError {
-  TokenizationErrorData(line_number: LineNumber, unexpected_char: String)
+  UnrecognizedChar(line_number: Int, unexpected_char: String)
 }
 
 pub type TokenizationResult {
   TokenizationResult(tokens: List(Token), errors: List(TokenizationError))
 }
 
-pub fn tokenize(source: String) -> TokenizationResult {
-  let graphemes = string.to_graphemes(source)
-  scan_characters_recursive(graphemes, 1, [], [])
+pub type TokenizerState {
+  TokenizerState(
+    line:   Int,
+    tokens: List(Token),
+    errors: List(TokenizationError),
+  )
 }
 
-fn scan_characters_recursive(
-  graphemes: List(String),
-  line_number: Int,
-  collected_tokens: List(Token),
-  collected_errors: List(TokenizationError),
-) -> TokenizationResult {
-  case graphemes {
-    [] ->
-      TokenizationResult(list.append(collected_tokens, [Eof]), collected_errors)
-    [char, ..rest] -> {
+pub fn tokenize(source: String) -> TokenizationResult {
+  let initial_state = TokenizerState(1, [], [])
+
+  let final_state =
+    string.to_graphemes(source)
+    |> list.fold(initial_state, classify_fold)
+
+  let TokenizerState(_, tokens, errors) = final_state
+  TokenizationResult(tokens |> list.append([Eof]), errors)
+}
+
+fn classify_fold(state: TokenizerState, char: String) -> TokenizerState {
+  case state {
+    TokenizerState(line, tokens, errors) ->
       case classify_char(char) {
-        Ok([NewLine]) -> {
-          scan_characters_recursive(
-            rest,
-            line_number + 1,
-            collected_tokens,
-            collected_errors,
-          )
+        Ok(NewLine) ->
+          TokenizerState(line + 1, tokens, errors)
+
+        Ok(token) -> {
+          let updated_tokens = tokens |> list.append([token])
+          TokenizerState(line, updated_tokens, errors)
         }
-        Ok(recognized_token) -> {
-          let updated_tokens = list.append(collected_tokens, recognized_token)
-          scan_characters_recursive(
-            rest,
-            line_number,
-            updated_tokens,
-            collected_errors,
-          )
-        }
+
         Error(_) -> {
           let updated_errors =
-            list.append(collected_errors, [
-              TokenizationErrorData(from_int(line_number), char),
-            ])
-          scan_characters_recursive(
-            rest,
-            line_number,
-            collected_tokens,
-            updated_errors,
-          )
+            errors |> list.append([UnrecognizedChar(line, char)])
+          TokenizerState(line, tokens, updated_errors)
         }
       }
-    }
   }
 }
 
-fn classify_char(char: String) -> Result(List(Token), Nil) {
+fn classify_char(char: String) -> Result(Token, Nil) {
   case char {
-    "(" -> Ok([LeftParen])
-    ")" -> Ok([RightParen])
-    "{" -> Ok([LeftBrace])
-    "}" -> Ok([RightBrace])
-    "+" -> Ok([Plus])
-    "-" -> Ok([Minus])
-    "," -> Ok([Comma])
-    "." -> Ok([Dot])
-    ";" -> Ok([Semicolon])
-    "*" -> Ok([Star])
-    "/" -> Ok([Slash])
-    "\n" -> Ok([NewLine])
-    _ -> Error(Nil)
+    "("  -> Ok(LeftParen)
+    ")"  -> Ok(RightParen)
+    "{"  -> Ok(LeftBrace)
+    "}"  -> Ok(RightBrace)
+    "+"  -> Ok(Plus)
+    "-"  -> Ok(Minus)
+    ","  -> Ok(Comma)
+    "."  -> Ok(Dot)
+    ";"  -> Ok(Semicolon)
+    "*"  -> Ok(Star)
+    "/"  -> Ok(Slash)
+    "\n" -> Ok(NewLine)
+    _    -> Error(Nil)
   }
 }

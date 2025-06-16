@@ -1,8 +1,7 @@
 import gleeunit/should
-import line_number.{from_int}
 import tokenizer.{
   type Token, type TokenizationError, Eof, LeftBrace, LeftParen, Plus,
-  RightBrace, RightParen, Semicolon, TokenizationErrorData, Star, tokenize,
+  RightBrace, RightParen, Semicolon, UnrecognizedChar, Star, tokenize,
 }
 
 type TestCase {
@@ -105,7 +104,7 @@ fn get_test_cases() -> List(TestCase) {
       input: "{}🤡",
       expected_tokens: [LeftBrace, RightBrace, Eof],
       expected_errors: [
-        TokenizationErrorData(line_number: from_int(1), unexpected_char: "🤡"),
+        UnrecognizedChar(line_number: 1, unexpected_char: "🤡"),
       ],
     ),
     WithErrorsTestCase(
@@ -113,9 +112,9 @@ fn get_test_cases() -> List(TestCase) {
       input: "{}🤡\n{🍏}\n*🔥",
       expected_tokens: [LeftBrace, RightBrace, LeftBrace, RightBrace, Star, Eof],
       expected_errors: [
-        TokenizationErrorData(line_number: from_int(1), unexpected_char: "🤡"),
-        TokenizationErrorData(line_number: from_int(2), unexpected_char: "🍏"),
-        TokenizationErrorData(line_number: from_int(3), unexpected_char: "🔥"),
+        UnrecognizedChar(line_number: 1, unexpected_char: "🤡"),
+        UnrecognizedChar(line_number: 2, unexpected_char: "🍏"),
+        UnrecognizedChar(line_number: 3, unexpected_char: "🔥"),
       ],
     ),
   ]
@@ -129,13 +128,13 @@ pub fn tokenize_test() {
 fn run_test_cases(test_cases: List(TestCase)) -> Nil {
   case test_cases {
     [] -> Nil
-    [SuccessTestCase(_name, input, expected_tokens), ..rest] -> {
+    [SuccessTestCase(_, input, expected_tokens), ..rest] -> {
       let tokenization_result = tokenize(input)
       let actual_tokens = tokenization_result.tokens
       should.equal(actual_tokens, expected_tokens)
       run_test_cases(rest)
     }
-    [WithErrorsTestCase(_name, input, expected_tokens, expected_errors), ..rest] -> {
+    [WithErrorsTestCase(_, input, expected_tokens, expected_errors), ..rest] -> {
       let tokenization_result = tokenize(input)
       let actual_tokens = tokenization_result.tokens
       let actual_errors = tokenization_result.errors

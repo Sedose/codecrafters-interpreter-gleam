@@ -6,7 +6,7 @@ import printer.{print}
 import simplifile
 import tokenizer.{tokenize}
 
-pub fn main() -> Nil {
+pub fn main() {
   case argv.load().arguments {
     ["tokenize", filename] -> handle_tokenize(filename)
     _ -> {
