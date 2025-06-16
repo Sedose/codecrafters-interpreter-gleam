@@ -2,8 +2,8 @@ import gleam/int
 import gleam/io
 import tokenizer.{
   type Token, type TokenizationError, type TokenizationResult, Comma, Dot, Eof,
-  LeftBrace, LeftParen, Minus, NewLine, Plus, RightBrace, RightParen, Semicolon,
-  Slash, Star,
+  Equal, EqualEqual, LeftBrace, LeftParen, Minus, NewLine, Plus, RightBrace,
+  RightParen, Semicolon, Slash, Star,
 }
 
 pub fn print(tokenization_result: TokenizationResult) -> Nil {
@@ -23,6 +23,8 @@ fn print_tokens(tokens: List(Token)) -> Nil {
 
 fn format_token(token: Token) -> String {
   case token {
+    Equal -> "EQUAL = null"
+    EqualEqual -> "EQUAL_EQUAL == null"
     LeftParen -> "LEFT_PAREN ( null"
     RightParen -> "RIGHT_PAREN ) null"
     LeftBrace -> "LEFT_BRACE { null"
