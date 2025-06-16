@@ -1,7 +1,7 @@
 import gleam/list
-import gleam/option.{type Option, None, Some}
 import gleam/string
 
+// Using `Result(token, Nil)` rather than `Option` to follow Gleam idioms
 pub type Token {
   Equal
   EqualEqual
@@ -28,107 +28,68 @@ pub type TokenizationResult {
   TokenizationResult(tokens: List(Token), errors: List(TokenizationError))
 }
 
-pub type Pending {
-  NonePending
-  EqualPending
-}
-
-pub type TokenizerState {
-  TokenizerState(
-    line: Int,
-    tokens: List(Token),
-    errors: List(TokenizationError),
-    pending: Pending,
-  )
-}
-
+/// Public entry point. Scans the source string into tokens or collects errors.
+/// Builds the token list *in reverse* for linear‐time appends, then reverses once.
+/// No intermediate `Pending` state is needed—multi‑character tokens are matched
+/// up‑front via list pattern matching.
 pub fn tokenize(source: String) -> TokenizationResult {
-  let initial_state = TokenizerState(1, [], [], NonePending)
-  let final_state =
-    string.to_graphemes(source)
-    |> list.fold(initial_state, classify_fold)
-  let TokenizerState(_, tokens0, errors, pending) = final_state
-  let tokens1 = case pending {
-    EqualPending -> tokens0 |> list.append([Equal])
-    NonePending -> tokens0
-  }
-  TokenizationResult(tokens1 |> list.append([Eof]), errors)
+  let graphemes = string.to_graphemes(source)
+  scan(1, graphemes, [], [])
 }
 
-fn classify_fold(state: TokenizerState, ch: String) -> TokenizerState {
-  case state {
-    TokenizerState(line, tokens, errors, pending) ->
-      case pending {
-        EqualPending -> handle_after_equal(line, tokens, errors, ch)
-        NonePending -> handle_char(line, tokens, errors, ch)
-      }
-  }
-}
-
-fn handle_after_equal(
+/// Tail‑recursive scanner. `tokens_rev` and `errors` grow by pre‑pending.
+fn scan(
   line: Int,
-  tokens: List(Token),
+  chars: List(String),
+  tokens_rev: List(Token),
   errors: List(TokenizationError),
-  ch: String,
-) -> TokenizerState {
-  case ch {
-    "=" -> {
-      let t = tokens |> list.append([EqualEqual])
-      TokenizerState(line, t, errors, NonePending)
+) -> TokenizationResult {
+  case chars {
+    // ── End of input ──────────────────────────────────────────────────────────
+    [] -> {
+      let tokens = list.reverse([Eof, ..tokens_rev])
+      TokenizationResult(tokens, errors)
     }
-    _ -> {
-      let t_with_eq = tokens |> list.append([Equal])
-      handle_char(line, t_with_eq, errors, ch)
-    }
-  }
-}
+    // ── Two‑character token ──────────────────────────────────────────────────
+    ["=", "=", ..rest] ->
+      scan(line, rest, [EqualEqual, ..tokens_rev], errors)
 
-fn handle_char(
-  line: Int,
-  tokens: List(Token),
-  errors: List(TokenizationError),
-  ch: String,
-) -> TokenizerState {
-  case ch {
-    "=" -> TokenizerState(line, tokens, errors, EqualPending)
+    // ── Single‑character tokens & newline handling ───────────────────────────
+    ["\n", ..rest] ->
+      scan(line + 1, rest, [NewLine, ..tokens_rev], errors)
 
-    _ ->
-      case classify_char(ch) {
-        Some(NewLine) -> TokenizerState(line + 1, tokens, errors, NonePending)
+    ["=", ..rest] ->
+      scan(line, rest, [Equal, ..tokens_rev], errors)
+    ["(", ..rest] ->
+      scan(line, rest, [LeftParen, ..tokens_rev], errors)
+    [")", ..rest] ->
+      scan(line, rest, [RightParen, ..tokens_rev], errors)
+    ["{", ..rest] ->
+      scan(line, rest, [LeftBrace, ..tokens_rev], errors)
+    ["}", ..rest] ->
+      scan(line, rest, [RightBrace, ..tokens_rev], errors)
+    [",", ..rest] ->
+      scan(line, rest, [Comma, ..tokens_rev], errors)
+    [".", ..rest] ->
+      scan(line, rest, [Dot, ..tokens_rev], errors)
+    ["-", ..rest] ->
+      scan(line, rest, [Minus, ..tokens_rev], errors)
+    ["+", ..rest] ->
+      scan(line, rest, [Plus, ..tokens_rev], errors)
+    [";", ..rest] ->
+      scan(line, rest, [Semicolon, ..tokens_rev], errors)
+    ["*", ..rest] ->
+      scan(line, rest, [Star, ..tokens_rev], errors)
+    ["/", ..rest] ->
+      scan(line, rest, [Slash, ..tokens_rev], errors)
 
-        Some(token) ->
-          TokenizerState(
-            line,
-            tokens |> list.append([token]),
-            errors,
-            NonePending,
-          )
-
-        None ->
-          TokenizerState(
-            line,
-            tokens,
-            errors |> list.append([UnrecognizedChar(line, ch)]),
-            NonePending,
-          )
-      }
-  }
-}
-
-fn classify_char(ch: String) -> Option(Token) {
-  case ch {
-    "\n" -> Some(NewLine)
-    "(" -> Some(LeftParen)
-    ")" -> Some(RightParen)
-    "{" -> Some(LeftBrace)
-    "}" -> Some(RightBrace)
-    "+" -> Some(Plus)
-    "-" -> Some(Minus)
-    "," -> Some(Comma)
-    "." -> Some(Dot)
-    ";" -> Some(Semicolon)
-    "*" -> Some(Star)
-    "/" -> Some(Slash)
-    _ -> None
+    // ── Anything else is unrecognised ────────────────────────────────────────
+    [ch, ..rest] ->
+      scan(
+        line,
+        rest,
+        tokens_rev,
+        [UnrecognizedChar(line, ch), ..errors],
+      )
   }
 }
