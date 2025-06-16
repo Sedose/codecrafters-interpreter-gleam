@@ -2,8 +2,8 @@ import gleam/int
 import gleam/io
 import tokenizer.{
   type Token, type TokenizationError, type TokenizationResult, Comma, Dot, Eof,
-  Equal, EqualEqual, LeftBrace, LeftParen, Minus, NewLine, Plus, RightBrace,
-  RightParen, Semicolon, Slash, Star,
+  Equal, EqualEqual, LeftBrace, LeftParen, Minus, Bang, BangEqual, Greater, GreaterEqual, Plus, RightBrace,
+  RightParen, Semicolon, Slash, Star, Less, LessEqual,
 }
 
 pub fn print(tokenization_result: TokenizationResult) -> Nil {
@@ -37,7 +37,12 @@ fn format_token(token: Token) -> String {
     Star -> "STAR * null"
     Slash -> "DIVIDE / null"
     Eof -> "EOF  null"
-    NewLine -> ""
+    Bang -> "BANG ! null"
+    BangEqual -> "BANG_EQUAL != null"
+    Greater -> "GREATER > null"
+    GreaterEqual -> "GREATER_EQUAL >= null"
+    Less -> "LESS < null"
+    LessEqual -> "LESS_EQUAL <= null"
   }
 }
 
