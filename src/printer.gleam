@@ -4,8 +4,11 @@ import tokenizer.{
   type Token, type TokenizationError, type TokenizationResult, Bang, BangEqual,
   Comma, Dot, Eof, Equal, EqualEqual, Greater, GreaterEqual, LeftBrace,
   LeftParen, Less, LessEqual, Minus, Plus, RightBrace, RightParen, Semicolon,
-  Slash, Star,
+  Slash, Star, StringToken, UnrecognizedChar, UnterminatedString,
 }
+
+// added
+// added
 
 pub fn print(tokenization_result: TokenizationResult) -> Nil {
   tokenization_result.errors |> print_errors
@@ -44,6 +47,10 @@ fn format_token(token: Token) -> String {
     GreaterEqual -> "GREATER_EQUAL >= null"
     Less -> "LESS < null"
     LessEqual -> "LESS_EQUAL <= null"
+    StringToken(literal) -> {
+      let lexeme = "\"" <> literal <> "\""
+      "STRING " <> lexeme <> " " <> literal
+    }
   }
 }
 
@@ -58,10 +65,14 @@ fn print_errors(errors: List(TokenizationError)) -> Nil {
 }
 
 fn format_error(error: TokenizationError) -> String {
-  let line_number = error.line_number |> int.to_string
-  let unexpected_char = error.unexpected_char
-  "[line "
-  <> line_number
-  <> "] Error: Unexpected character: "
-  <> unexpected_char
+  case error {
+    UnrecognizedChar(line_number, unexpected_char) ->
+      "[line "
+      <> int.to_string(line_number)
+      <> "] Error: Unexpected character: "
+      <> unexpected_char
+
+    UnterminatedString(line_number) ->
+      "[line " <> int.to_string(line_number) <> "] Error: Unterminated string."
+  }
 }

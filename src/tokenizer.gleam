@@ -21,11 +21,13 @@ pub type Token {
   GreaterEqual
   Less
   Greater
+  StringToken(String)
   Eof
 }
 
 pub type TokenizationError {
   UnrecognizedChar(line_number: Int, unexpected_char: String)
+  UnterminatedString(line_number: Int)
 }
 
 pub type TokenizationResult {
@@ -53,6 +55,7 @@ fn scan(
     ["\n", ..rest] -> scan(line + 1, rest, tokens_rev, errors)
     [" ", ..rest] -> scan(line, rest, tokens_rev, errors)
     ["\t", ..rest] -> scan(line, rest, tokens_rev, errors)
+    ["\"", ..rest] -> scan_string(line, rest, [], tokens_rev, errors)
     ["/", "/", ..rest] -> {
       let after_comment =
         rest |> list.drop_while(fn(ch) { ch != "\n" && ch != "\r" })
@@ -79,5 +82,25 @@ fn scan(
     ["/", ..rest] -> scan(line, rest, [Slash, ..tokens_rev], errors)
     [ch, ..rest] ->
       scan(line, rest, tokens_rev, [UnrecognizedChar(line, ch), ..errors])
+  }
+}
+
+fn scan_string(
+  line: Int,
+  chars: List(String),
+  literal_rev: List(String),
+  tokens_rev: List(Token),
+  errors: List(TokenizationError),
+) -> TokenizationResult {
+  case chars {
+    [] -> scan(line, chars, tokens_rev, [UnterminatedString(line), ..errors])
+    ["\"", ..after_quote] -> {
+      let literal = literal_rev |> list.reverse |> string.concat
+      scan(line, after_quote, [StringToken(literal), ..tokens_rev], errors)
+    }
+    ["\n", ..rest] ->
+      scan_string(line + 1, rest, ["\n", ..literal_rev], tokens_rev, errors)
+    [ch, ..rest] ->
+      scan_string(line, rest, [ch, ..literal_rev], tokens_rev, errors)
   }
 }
