@@ -54,7 +54,11 @@ fn scan(
     [" ", ..rest] -> scan(line, rest, tokens_rev, errors)
     ["\t", ..rest] -> scan(line, rest, tokens_rev, errors)
     ["\r", ..rest] -> scan(line, rest, tokens_rev, errors)
-    ["/", "/", ..rest] -> skip_comment(line, rest, tokens_rev, errors)
+    ["/", "/", ..rest] -> {
+      let after_comment =
+        rest |> list.drop_while(fn(ch) { ch != "\n" && ch != "\r" })
+      scan(line, after_comment, tokens_rev, errors)
+    }
     ["!", "=", ..rest] -> scan(line, rest, [BangEqual, ..tokens_rev], errors)
     ["=", "=", ..rest] -> scan(line, rest, [EqualEqual, ..tokens_rev], errors)
     ["<", "=", ..rest] -> scan(line, rest, [LessEqual, ..tokens_rev], errors)
@@ -78,15 +82,3 @@ fn scan(
       scan(line, rest, tokens_rev, [UnrecognizedChar(line, ch), ..errors])
   }
 }
-
-fn skip_comment(
-  current_line: Int,
-  remaining_chars: List(String),
-  tokens_rev: List(Token),
-  errors: List(TokenizationError),
-) -> TokenizationResult {
-  let after_comment =
-    remaining_chars |> list.drop_while(fn(ch) { ch != "\n" && ch != "\r" })
-  scan(current_line, after_comment, tokens_rev, errors)
-}
-
