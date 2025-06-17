@@ -36,7 +36,7 @@ fn format_token(token: Token) -> String {
     Semicolon -> "SEMICOLON ; null"
     Plus -> "PLUS + null"
     Star -> "STAR * null"
-    Slash -> "DIVIDE / null"
+    Slash -> "SLASH / null"
     Eof -> "EOF  null"
     Bang -> "BANG ! null"
     BangEqual -> "BANG_EQUAL != null"
