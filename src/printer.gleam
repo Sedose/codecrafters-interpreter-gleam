@@ -1,9 +1,10 @@
 import gleam/int
 import gleam/io
 import tokenizer.{
-  type Token, type TokenizationError, type TokenizationResult, Comma, Dot, Eof,
-  Equal, EqualEqual, LeftBrace, LeftParen, Minus, Bang, BangEqual, Greater, GreaterEqual, Plus, RightBrace,
-  RightParen, Semicolon, Slash, Star, Less, LessEqual,
+  type Token, type TokenizationError, type TokenizationResult, Bang, BangEqual,
+  Comma, Dot, Eof, Equal, EqualEqual, Greater, GreaterEqual, LeftBrace,
+  LeftParen, Less, LessEqual, Minus, Plus, RightBrace, RightParen, Semicolon,
+  Slash, Star,
 }
 
 pub fn print(tokenization_result: TokenizationResult) -> Nil {

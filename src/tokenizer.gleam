@@ -44,25 +44,21 @@ fn scan(
   errors: List(TokenizationError),
 ) -> TokenizationResult {
   case chars {
-    [] -> 
-      TokenizationResult(list.reverse([Eof, ..tokens_rev]), list.reverse(errors))
-    ["\r", "\n", ..rest] ->
-      scan(line + 1, rest, tokens_rev, errors)
-    ["\n", ..rest] ->
-      scan(line + 1, rest, tokens_rev, errors)
+    [] ->
+      TokenizationResult(
+        list.reverse([Eof, ..tokens_rev]),
+        list.reverse(errors),
+      )
+    ["\r", "\n", ..rest] -> scan(line + 1, rest, tokens_rev, errors)
+    ["\n", ..rest] -> scan(line + 1, rest, tokens_rev, errors)
     [" ", ..rest] -> scan(line, rest, tokens_rev, errors)
     ["\t", ..rest] -> scan(line, rest, tokens_rev, errors)
     ["\r", ..rest] -> scan(line, rest, tokens_rev, errors)
-    ["/", "/", ..rest] ->
-      skip_comment(line, rest, tokens_rev, errors)
-    ["!", "=", ..rest] ->
-      scan(line, rest, [BangEqual, ..tokens_rev], errors)
-    ["=", "=", ..rest] ->
-      scan(line, rest, [EqualEqual, ..tokens_rev], errors)
-    ["<", "=", ..rest] ->
-      scan(line, rest, [LessEqual, ..tokens_rev], errors)
-    [">", "=", ..rest] ->
-      scan(line, rest, [GreaterEqual, ..tokens_rev], errors)
+    ["/", "/", ..rest] -> skip_comment(line, rest, tokens_rev, errors)
+    ["!", "=", ..rest] -> scan(line, rest, [BangEqual, ..tokens_rev], errors)
+    ["=", "=", ..rest] -> scan(line, rest, [EqualEqual, ..tokens_rev], errors)
+    ["<", "=", ..rest] -> scan(line, rest, [LessEqual, ..tokens_rev], errors)
+    [">", "=", ..rest] -> scan(line, rest, [GreaterEqual, ..tokens_rev], errors)
     ["!", ..rest] -> scan(line, rest, [Bang, ..tokens_rev], errors)
     ["=", ..rest] -> scan(line, rest, [Equal, ..tokens_rev], errors)
     ["<", ..rest] -> scan(line, rest, [Less, ..tokens_rev], errors)
@@ -84,15 +80,13 @@ fn scan(
 }
 
 fn skip_comment(
-  line: Int,
-  chars: List(String),
+  current_line: Int,
+  remaining_chars: List(String),
   tokens_rev: List(Token),
   errors: List(TokenizationError),
 ) -> TokenizationResult {
-  case chars {
-    [] -> scan(line, [], tokens_rev, errors)
-    ["\r", "\n", ..rest] -> scan(line + 1, rest, tokens_rev, errors)
-    ["\n", ..rest] -> scan(line + 1, rest, tokens_rev, errors)
-    [_, ..rest] -> skip_comment(line, rest, tokens_rev, errors)
-  }
+  let after_comment =
+    remaining_chars |> list.drop_while(fn(ch) { ch != "\n" && ch != "\r" })
+  scan(current_line, after_comment, tokens_rev, errors)
 }
+
