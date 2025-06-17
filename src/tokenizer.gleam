@@ -53,7 +53,6 @@ fn scan(
     ["\n", ..rest] -> scan(line + 1, rest, tokens_rev, errors)
     [" ", ..rest] -> scan(line, rest, tokens_rev, errors)
     ["\t", ..rest] -> scan(line, rest, tokens_rev, errors)
-    ["\r", ..rest] -> scan(line, rest, tokens_rev, errors)
     ["/", "/", ..rest] -> {
       let after_comment =
         rest |> list.drop_while(fn(ch) { ch != "\n" && ch != "\r" })
