@@ -1,5 +1,9 @@
+import gleam/float
+import gleam/int
 import gleam/list
+import gleam/result
 import gleam/string
+import ints.{is_digit, is_number_char}
 
 pub type Token {
   Bang
@@ -22,6 +26,7 @@ pub type Token {
   Less
   Greater
   StringToken(String)
+  NumberToken(String, Float)
   Eof
 }
 
@@ -80,8 +85,13 @@ fn scan(
     [";", ..rest] -> scan(line, rest, [Semicolon, ..tokens_rev], errors)
     ["*", ..rest] -> scan(line, rest, [Star, ..tokens_rev], errors)
     ["/", ..rest] -> scan(line, rest, [Slash, ..tokens_rev], errors)
-    [ch, ..rest] ->
-      scan(line, rest, tokens_rev, [UnrecognizedChar(line, ch), ..errors])
+    [char, ..rest] -> {
+      case is_digit(char) {
+        True -> scan_number(line, [char, ..rest], tokens_rev, errors)
+        False ->
+          scan(line, rest, tokens_rev, [UnrecognizedChar(line, char), ..errors])
+      }
+    }
   }
 }
 
@@ -102,5 +112,35 @@ fn scan_string(
       scan_string(line + 1, rest, ["\n", ..literal_rev], tokens_rev, errors)
     [ch, ..rest] ->
       scan_string(line, rest, [ch, ..literal_rev], tokens_rev, errors)
+  }
+}
+
+fn scan_number(
+  line: Int,
+  chars: List(String),
+  tokens_rev: List(Token),
+  errors: List(TokenizationError),
+) -> TokenizationResult {
+  let digits = list.take_while(chars, is_number_char)
+  let remaining = list.drop_while(chars, is_number_char)
+  let lexeme = string.concat(digits)
+  case parse_number(lexeme) {
+    Ok(value) -> {
+      let updated_tokens_rev = [NumberToken(lexeme, value), ..tokens_rev]
+      scan(line, remaining, updated_tokens_rev, errors)
+    }
+    Error(_) -> {
+      let updated_errors_rev = [UnrecognizedChar(line, lexeme), ..errors]
+      scan(line, remaining, tokens_rev, updated_errors_rev)
+    }
+  }
+}
+
+fn parse_number(lexeme: String) -> Result(Float, Nil) {
+  case float.parse(lexeme) {
+    Ok(f) -> Ok(f)
+    Error(_) ->
+      int.parse(lexeme)
+      |> result.map(int.to_float)
   }
 }

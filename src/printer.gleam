@@ -1,14 +1,12 @@
+import gleam/float
 import gleam/int
 import gleam/io
 import tokenizer.{
   type Token, type TokenizationError, type TokenizationResult, Bang, BangEqual,
   Comma, Dot, Eof, Equal, EqualEqual, Greater, GreaterEqual, LeftBrace,
-  LeftParen, Less, LessEqual, Minus, Plus, RightBrace, RightParen, Semicolon,
-  Slash, Star, StringToken, UnrecognizedChar, UnterminatedString,
+  LeftParen, Less, LessEqual, Minus, NumberToken, Plus, RightBrace, RightParen,
+  Semicolon, Slash, Star, StringToken, UnrecognizedChar, UnterminatedString,
 }
-
-// added
-// added
 
 pub fn print(tokenization_result: TokenizationResult) -> Nil {
   tokenization_result.errors |> print_errors
@@ -51,6 +49,8 @@ fn format_token(token: Token) -> String {
       let lexeme = "\"" <> literal <> "\""
       "STRING " <> lexeme <> " " <> literal
     }
+    NumberToken(lexeme, value) ->
+      "NUMBER " <> lexeme <> " " <> float.to_string(value)
   }
 }
 
