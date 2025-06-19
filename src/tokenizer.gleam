@@ -137,10 +137,9 @@ fn scan_number(
 }
 
 fn parse_number(lexeme: String) -> Result(Float, Nil) {
-  case float.parse(lexeme) {
-    Ok(f) -> Ok(f)
-    Error(_) ->
-      int.parse(lexeme)
-      |> result.map(int.to_float)
-  }
+  float.parse(lexeme)
+  |> result.or(
+    int.parse(lexeme)
+    |> result.map(int.to_float),
+  )
 }
