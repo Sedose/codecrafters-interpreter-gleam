@@ -3,7 +3,7 @@ import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
-import ints.{is_digit, is_number_char}
+import util.{is_alpha_numeric, is_digit, is_number_char, is_alpha}
 
 pub type Token {
   Bang
@@ -25,8 +25,9 @@ pub type Token {
   GreaterEqual
   Less
   Greater
-  StringToken(String)
-  NumberToken(String, Float)
+  String(String)
+  Number(String, Float)
+  Identifier(String)
   Eof
 }
 
@@ -89,7 +90,14 @@ fn scan(
       case is_digit(char) {
         True -> scan_number(line, [char, ..rest], tokens_rev, errors)
         False ->
-          scan(line, rest, tokens_rev, [UnrecognizedChar(line, char), ..errors])
+          case is_alpha(char) {
+            True -> scan_identifier(line, [char, ..rest], tokens_rev, errors)
+            False ->
+              scan(line, rest, tokens_rev, [
+                UnrecognizedChar(line, char),
+                ..errors
+              ])
+          }
       }
     }
   }
@@ -106,7 +114,7 @@ fn scan_string(
     [] -> scan(line, chars, tokens_rev, [UnterminatedString(line), ..errors])
     ["\"", ..after_quote] -> {
       let literal = literal_rev |> list.reverse |> string.concat
-      scan(line, after_quote, [StringToken(literal), ..tokens_rev], errors)
+      scan(line, after_quote, [String(literal), ..tokens_rev], errors)
     }
     ["\n", ..rest] ->
       scan_string(line + 1, rest, ["\n", ..literal_rev], tokens_rev, errors)
@@ -126,7 +134,7 @@ fn scan_number(
   let lexeme = string.concat(digits)
   case parse_number(lexeme) {
     Ok(value) -> {
-      let updated_tokens_rev = [NumberToken(lexeme, value), ..tokens_rev]
+      let updated_tokens_rev = [Number(lexeme, value), ..tokens_rev]
       scan(line, remaining, updated_tokens_rev, errors)
     }
     Error(_) -> {
@@ -137,9 +145,21 @@ fn scan_number(
 }
 
 fn parse_number(lexeme: String) -> Result(Float, Nil) {
-  float.parse(lexeme)
-  |> result.or(
+  result.or(
+    float.parse(lexeme),
     int.parse(lexeme)
-    |> result.map(int.to_float),
+      |> result.map(int.to_float),
   )
+}
+
+fn scan_identifier(
+  line: Int,
+  chars: List(String),
+  tokens_rev: List(Token),
+  errors: List(TokenizationError),
+) -> TokenizationResult {
+  let id_graphemes = list.take_while(chars, is_alpha_numeric)
+  let remaining = list.drop_while(chars, is_alpha_numeric)
+  let lexeme = string.concat(id_graphemes)
+  scan(line, remaining, [Identifier(lexeme), ..tokens_rev], errors)
 }
