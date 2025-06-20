@@ -2,12 +2,12 @@ import gleam/float
 import gleam/int
 import gleam/io
 import tokenizer.{
-  type Token, type TokenizationError, type TokenizationResult, Bang, BangEqual,
-  Comma, Dot, Eof, Equal, EqualEqual, Greater, GreaterEqual, LeftBrace,
-  LeftParen, Less, LessEqual, Identifier, Minus, Number, Plus, RightBrace,
-  RightParen, Semicolon, Slash, Star, String, UnrecognizedChar,
-  UnterminatedString, And, Class, Else, For, NilToken, Fun, If, Or, While, Print,
-  Return, Super, This, TrueToken, FalseToken, Var
+  type Token, type TokenizationError, type TokenizationResult, And, Bang,
+  BangEqual, Class, Comma, Dot, Else, Eof, Equal, EqualEqual, FalseToken, For,
+  Fun, Greater, GreaterEqual, Identifier, If, LeftBrace, LeftParen, Less,
+  LessEqual, Minus, NilToken, Number, Or, Plus, Print, Return, RightBrace,
+  RightParen, Semicolon, Slash, Star, String, Super, This, TrueToken,
+  UnrecognizedChar, UnterminatedString, Var, While,
 }
 
 pub fn print(tokenization_result: TokenizationResult) -> Nil {
@@ -73,7 +73,6 @@ fn format_token(token: Token) -> String {
     While -> "WHILE while null"
   }
 }
-
 
 fn print_errors(errors: List(TokenizationError)) -> Nil {
   case errors {

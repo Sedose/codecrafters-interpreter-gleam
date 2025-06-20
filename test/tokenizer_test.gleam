@@ -1,7 +1,8 @@
 import gleeunit/should
 import tokenizer.{
-  type Token, type TokenizationError, Eof, LeftBrace, LeftParen, Plus,
-  RightBrace, RightParen, Semicolon, Star, UnrecognizedChar, Identifier, Number, Return, tokenize,
+  type Token, type TokenizationError, Eof, Identifier, LeftBrace, LeftParen,
+  Number, Plus, Return, RightBrace, RightParen, Semicolon, Star,
+  UnrecognizedChar, tokenize,
 }
 
 type TestCase {

@@ -3,7 +3,7 @@ import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
-import util.{is_alpha_numeric, is_digit, is_number_char, is_alpha}
+import util.{is_alpha, is_alpha_numeric, is_digit, is_number_char}
 
 pub type Token {
   Bang
@@ -40,7 +40,7 @@ pub type Token {
   Return
   Super
   This
-  TrueToken 
+  TrueToken
   FalseToken
   Var
   While
@@ -174,33 +174,31 @@ fn scan_identifier(
   tokens_rev: List(Token),
   errors: List(TokenizationError),
 ) -> TokenizationResult {
-
-  let glyphs      = list.take_while(chars, is_alpha_numeric)
-  let remaining   = list.drop_while(chars, is_alpha_numeric)
-  let lexeme      = string.concat(glyphs)
-  let token       = keyword_or_identifier(lexeme)
-
+  let glyphs = list.take_while(chars, is_alpha_numeric)
+  let remaining = list.drop_while(chars, is_alpha_numeric)
+  let lexeme = string.concat(glyphs)
+  let token = keyword_or_identifier(lexeme)
   scan(line, remaining, [token, ..tokens_rev], errors)
 }
 
 fn keyword_or_identifier(lexeme: String) -> Token {
   case lexeme {
-    "and"    -> And
-    "class"  -> Class
-    "else"   -> Else
-    "false"  -> FalseToken
-    "for"    -> For
-    "fun"    -> Fun
-    "if"     -> If
-    "nil"    -> NilToken
-    "or"     -> Or
-    "print"  -> Print
+    "and" -> And
+    "class" -> Class
+    "else" -> Else
+    "false" -> FalseToken
+    "for" -> For
+    "fun" -> Fun
+    "if" -> If
+    "nil" -> NilToken
+    "or" -> Or
+    "print" -> Print
     "return" -> Return
-    "super"  -> Super
-    "this"   -> This
-    "true"   -> TrueToken
-    "var"    -> Var
-    "while"  -> While
-    _        -> Identifier(lexeme)
+    "super" -> Super
+    "this" -> This
+    "true" -> TrueToken
+    "var" -> Var
+    "while" -> While
+    _ -> Identifier(lexeme)
   }
 }
