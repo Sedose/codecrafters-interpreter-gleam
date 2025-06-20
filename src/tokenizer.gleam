@@ -28,6 +28,22 @@ pub type Token {
   String(String)
   Number(String, Float)
   Identifier(String)
+  And
+  Class
+  Else
+  For
+  Fun
+  If
+  NilToken
+  Or
+  Print
+  Return
+  Super
+  This
+  TrueToken 
+  FalseToken
+  Var
+  While
   Eof
 }
 
@@ -158,8 +174,33 @@ fn scan_identifier(
   tokens_rev: List(Token),
   errors: List(TokenizationError),
 ) -> TokenizationResult {
-  let id_graphemes = list.take_while(chars, is_alpha_numeric)
-  let remaining = list.drop_while(chars, is_alpha_numeric)
-  let lexeme = string.concat(id_graphemes)
-  scan(line, remaining, [Identifier(lexeme), ..tokens_rev], errors)
+
+  let glyphs      = list.take_while(chars, is_alpha_numeric)
+  let remaining   = list.drop_while(chars, is_alpha_numeric)
+  let lexeme      = string.concat(glyphs)
+  let token       = keyword_or_identifier(lexeme)
+
+  scan(line, remaining, [token, ..tokens_rev], errors)
+}
+
+fn keyword_or_identifier(lexeme: String) -> Token {
+  case lexeme {
+    "and"    -> And
+    "class"  -> Class
+    "else"   -> Else
+    "false"  -> FalseToken
+    "for"    -> For
+    "fun"    -> Fun
+    "if"     -> If
+    "nil"    -> NilToken
+    "or"     -> Or
+    "print"  -> Print
+    "return" -> Return
+    "super"  -> Super
+    "this"   -> This
+    "true"   -> TrueToken
+    "var"    -> Var
+    "while"  -> While
+    _        -> Identifier(lexeme)
+  }
 }

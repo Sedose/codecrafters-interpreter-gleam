@@ -1,7 +1,7 @@
 import gleeunit/should
 import tokenizer.{
   type Token, type TokenizationError, Eof, LeftBrace, LeftParen, Plus,
-  RightBrace, RightParen, Semicolon, Star, UnrecognizedChar, tokenize,
+  RightBrace, RightParen, Semicolon, Star, UnrecognizedChar, Identifier, Number, Return, tokenize,
 }
 
 type TestCase {
@@ -67,13 +67,19 @@ fn get_test_cases() -> List(TestCase) {
       Eof,
     ]),
     SuccessTestCase(name: "ignores letters", input: "a(b)c", expected_tokens: [
+      Identifier("a"),
       LeftParen,
+      Identifier("b"),
       RightParen,
+      Identifier("c"),
       Eof,
     ]),
     SuccessTestCase(name: "ignores numbers", input: "1(2)3", expected_tokens: [
+      Number("1", 1.0),
       LeftParen,
+      Number("2", 2.0),
       RightParen,
+      Number("3", 3.0),
       Eof,
     ]),
     SuccessTestCase(
@@ -90,9 +96,12 @@ fn get_test_cases() -> List(TestCase) {
       name: "complex mixed content",
       input: "function() { return value; }",
       expected_tokens: [
+        Identifier("function"),
         LeftParen,
         RightParen,
         LeftBrace,
+        Return,
+        Identifier("value"),
         Semicolon,
         RightBrace,
         Eof,

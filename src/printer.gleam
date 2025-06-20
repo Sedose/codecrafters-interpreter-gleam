@@ -6,7 +6,8 @@ import tokenizer.{
   Comma, Dot, Eof, Equal, EqualEqual, Greater, GreaterEqual, LeftBrace,
   LeftParen, Less, LessEqual, Identifier, Minus, Number, Plus, RightBrace,
   RightParen, Semicolon, Slash, Star, String, UnrecognizedChar,
-  UnterminatedString,
+  UnterminatedString, And, Class, Else, For, NilToken, Fun, If, Or, While, Print,
+  Return, Super, This, TrueToken, FalseToken, Var
 }
 
 pub fn print(tokenization_result: TokenizationResult) -> Nil {
@@ -52,9 +53,27 @@ fn format_token(token: Token) -> String {
     }
     Number(lexeme, value) ->
       "NUMBER " <> lexeme <> " " <> float.to_string(value)
-    Identifier(literal) -> "IDENTIFIER " <> literal <> " null"
+
+    Identifier(name) -> "IDENTIFIER " <> name <> " null"
+    And -> "AND and null"
+    Class -> "CLASS class null"
+    Else -> "ELSE else null"
+    For -> "FOR for null"
+    Fun -> "FUN fun null"
+    If -> "IF if null"
+    NilToken -> "NIL nil null"
+    Or -> "OR or null"
+    Print -> "PRINT print null"
+    Return -> "RETURN return null"
+    Super -> "SUPER super null"
+    This -> "THIS this null"
+    TrueToken -> "TRUE true null"
+    FalseToken -> "FALSE false null"
+    Var -> "VAR var null"
+    While -> "WHILE while null"
   }
 }
+
 
 fn print_errors(errors: List(TokenizationError)) -> Nil {
   case errors {
