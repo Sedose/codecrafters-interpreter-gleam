@@ -1,6 +1,8 @@
 import gleam/float
 import gleam/int
 import gleam/io
+import gleam/list
+
 import tokenizer.{
   type Token, type TokenizationError, type TokenizationResult, And, Bang,
   BangEqual, Class, Comma, Dot, Else, Eof, Equal, EqualEqual, FalseToken, For,
@@ -10,19 +12,16 @@ import tokenizer.{
   UnrecognizedChar, UnterminatedString, Var, While,
 }
 
-pub fn print(tokenization_result: TokenizationResult) -> Nil {
-  tokenization_result.errors |> print_errors
-  tokenization_result.tokens |> print_tokens
-}
+pub fn print(result: TokenizationResult) -> Nil {
+  result.errors
+  |> list.map(format_error)
+  |> list.map(io.println_error)
 
-fn print_tokens(tokens: List(Token)) -> Nil {
-  case tokens {
-    [] -> Nil
-    [first, ..rest] -> {
-      format_token(first) |> io.println
-      print_tokens(rest)
-    }
-  }
+  result.tokens
+  |> list.map(format_token)
+  |> list.map(io.println)
+
+  Nil
 }
 
 fn format_token(token: Token) -> String {
@@ -71,16 +70,6 @@ fn format_token(token: Token) -> String {
     FalseToken -> "FALSE false null"
     Var -> "VAR var null"
     While -> "WHILE while null"
-  }
-}
-
-fn print_errors(errors: List(TokenizationError)) -> Nil {
-  case errors {
-    [] -> Nil
-    [first, ..rest] -> {
-      format_error(first) |> io.println_error
-      print_errors(rest)
-    }
   }
 }
 
