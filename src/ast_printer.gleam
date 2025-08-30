@@ -13,7 +13,7 @@ pub fn print(expr: Expr) -> Nil {
         FalseLiteral -> "false"
         NilLiteral -> "nil"
         NumberLiteral(n) -> float.to_string(n)
-        StringLiteral(s) -> "\"" <> s <> "\""
+        StringLiteral(s) -> s
       }
   }
 
