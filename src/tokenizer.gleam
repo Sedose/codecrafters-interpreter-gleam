@@ -25,9 +25,9 @@ pub type Token {
   GreaterEqual
   Less
   Greater
-  String(String)
-  Number(String, Float)
-  Identifier(String)
+  String(value: String)
+  Number(lexeme: String, value: Float)
+  Identifier(name: String)
   And
   Class
   Else
