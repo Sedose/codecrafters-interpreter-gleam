@@ -17,8 +17,8 @@ const usage_message = "Usage: ./your_program.sh tokenize <filename>"
 
 pub fn main() -> Nil {
   let exit_code = case argv.load().arguments {
-    ["tokenize", filename] -> handle_tokenize(filename)
-    ["parse", filename] -> handle_parse(filename)
+    ["tokenize", filename] -> execute_with_file(filename, process_tokenize)
+    ["parse", filename] -> execute_with_file(filename, process_parse)
     _ -> {
       io.println_error(usage_message)
       exit_code_general_error
@@ -28,17 +28,9 @@ pub fn main() -> Nil {
   exit(exit_code)
 }
 
-pub fn handle_tokenize(filename: String) -> Int {
+fn execute_with_file(filename: String, process: fn(String) -> Int) -> Int {
   case simplifile.read(filename) {
-    Ok(contents) -> {
-      let tokenization_result = tokenize(contents)
-      tokenization_result |> print
-
-      case tokenization_result.errors {
-        [] -> exit_code_success
-        _ -> exit_code_tokenization_error
-      }
-    }
+    Ok(contents) -> process(contents)
     Error(err) -> {
       err
       |> describe_error
@@ -48,22 +40,22 @@ pub fn handle_tokenize(filename: String) -> Int {
   }
 }
 
-pub fn handle_parse(filename: String) -> Int {
-  case simplifile.read(filename) {
-    Ok(contents) -> {
-      contents
-      |> tokenizer.tokenize
-      |> fn(result) { result.tokens }
-      |> parse
-      |> ast_printer.print
+fn process_tokenize(contents: String) -> Int {
+  let tokenization_result = tokenize(contents)
+  tokenization_result |> print
 
-      exit_code_success
-    }
-    Error(err) -> {
-      err
-      |> describe_error
-      |> io.println_error
-      exit_code_general_error
-    }
+  case tokenization_result.errors {
+    [] -> exit_code_success
+    _ -> exit_code_tokenization_error
   }
+}
+
+fn process_parse(contents: String) -> Int {
+  contents
+  |> tokenizer.tokenize
+  |> fn(result) { result.tokens }
+  |> parse
+  |> ast_printer.print
+
+  exit_code_success
 }
