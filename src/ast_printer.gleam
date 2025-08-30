@@ -1,6 +1,6 @@
 import ast.{
-  type Expr, FalseLiteral, Literal, NilLiteral, NumberLiteral,
-  StringLiteral, TrueLiteral,
+  type Expr, FalseLiteral, Literal, NilLiteral, NumberLiteral, StringLiteral,
+  TrueLiteral,
 }
 import gleam/float
 import gleam/io
