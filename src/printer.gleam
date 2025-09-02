@@ -3,7 +3,7 @@ import gleam/int
 import gleam/io
 import gleam/list
 
-import tokenizer.{
+import data_def.{
   type Token, type TokenizationError, type TokenizationResult, And, Bang,
   BangEqual, Class, Comma, Dot, Else, Eof, Equal, EqualEqual, FalseToken, For,
   Fun, Greater, GreaterEqual, Identifier, If, LeftBrace, LeftParen, Less,

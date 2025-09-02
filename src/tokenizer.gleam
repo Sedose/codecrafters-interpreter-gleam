@@ -1,60 +1,17 @@
+import data_def.{
+  type Token, type TokenizationError, type TokenizationResult, And, Bang,
+  BangEqual, Class, Comma, Dot, Else, Eof, Equal, EqualEqual, FalseToken, For,
+  Fun, Greater, GreaterEqual, Identifier, If, LeftBrace, LeftParen, Less,
+  LessEqual, Minus, NilToken, Number, Or, Plus, Print, Return, RightBrace,
+  RightParen, Semicolon, Slash, Star, String, Super, This, TokenizationResult,
+  TrueToken, UnrecognizedChar, UnterminatedString, Var, While,
+}
 import gleam/float
 import gleam/int
 import gleam/list
 import gleam/result
 import gleam/string
 import util.{is_alpha, is_alpha_numeric, is_digit, is_number_char}
-
-pub type Token {
-  Bang
-  Equal
-  LeftParen
-  RightParen
-  LeftBrace
-  RightBrace
-  Comma
-  Dot
-  Minus
-  Plus
-  Semicolon
-  Slash
-  Star
-  BangEqual
-  EqualEqual
-  LessEqual
-  GreaterEqual
-  Less
-  Greater
-  String(value: String)
-  Number(lexeme: String, value: Float)
-  Identifier(name: String)
-  And
-  Class
-  Else
-  For
-  Fun
-  If
-  NilToken
-  Or
-  Print
-  Return
-  Super
-  This
-  TrueToken
-  FalseToken
-  Var
-  While
-  Eof
-}
-
-pub type TokenizationError {
-  UnrecognizedChar(line_number: Int, unexpected_char: String)
-  UnterminatedString(line_number: Int)
-}
-
-pub type TokenizationResult {
-  TokenizationResult(tokens: List(Token), errors: List(TokenizationError))
-}
 
 pub fn tokenize(source: String) -> TokenizationResult {
   let graphemes = string.to_graphemes(source)

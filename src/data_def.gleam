@@ -1,0 +1,63 @@
+pub type Token {
+  Bang
+  Equal
+  LeftParen
+  RightParen
+  LeftBrace
+  RightBrace
+  Comma
+  Dot
+  Minus
+  Plus
+  Semicolon
+  Slash
+  Star
+  BangEqual
+  EqualEqual
+  LessEqual
+  GreaterEqual
+  Less
+  Greater
+  String(value: String)
+  Number(lexeme: String, value: Float)
+  Identifier(name: String)
+  And
+  Class
+  Else
+  For
+  Fun
+  If
+  NilToken
+  Or
+  Print
+  Return
+  Super
+  This
+  TrueToken
+  FalseToken
+  Var
+  While
+  Eof
+}
+
+pub type Expr {
+  Literal(value: LiteralValue)
+  Grouping(inner: Expr)
+}
+
+pub type LiteralValue {
+  TrueLiteral
+  FalseLiteral
+  NilLiteral
+  NumberLiteral(Float)
+  StringLiteral(String)
+}
+
+pub type TokenizationError {
+  UnrecognizedChar(line_number: Int, unexpected_char: String)
+  UnterminatedString(line_number: Int)
+}
+
+pub type TokenizationResult {
+  TokenizationResult(tokens: List(Token), errors: List(TokenizationError))
+}
