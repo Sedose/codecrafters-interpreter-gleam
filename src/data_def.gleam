@@ -40,9 +40,15 @@ pub type Token {
   Eof
 }
 
+pub type UnaryOp {
+  NotOp
+  NegateOp
+}
+
 pub type Expr {
   Literal(value: LiteralValue)
   Grouping(inner: Expr)
+  Unary(op: UnaryOp, right: Expr)
 }
 
 pub type LiteralValue {

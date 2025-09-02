@@ -1,6 +1,6 @@
 import data_def.{
   type Expr, FalseLiteral, Grouping, Literal, NilLiteral, NumberLiteral,
-  StringLiteral, TrueLiteral,
+  StringLiteral, TrueLiteral, Unary, type UnaryOp, NotOp, NegateOp,
 }
 import gleam/float
 import gleam/io
@@ -20,5 +20,14 @@ fn format(expr: Expr) -> String {
         StringLiteral(s) -> s
       }
     Grouping(inner) -> "(group " <> format(inner) <> ")"
+    Unary(op, right) ->
+      "(" <> format_unary_op(op) <> " " <> format(right) <> ")"
+  }
+}
+
+fn format_unary_op(op: UnaryOp) -> String {
+  case op {
+    NotOp -> "!"
+    NegateOp -> "-"
   }
 }

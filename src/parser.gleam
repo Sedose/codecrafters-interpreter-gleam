@@ -1,7 +1,7 @@
 import data_def.{
   type Expr, type Token, FalseLiteral, FalseToken, Grouping, LeftParen, Literal,
   NilLiteral, NilToken, Number, NumberLiteral, RightParen, String, StringLiteral,
-  TrueLiteral, TrueToken,
+  TrueLiteral, TrueToken, Unary, NotOp, NegateOp, Bang, Minus,
 }
 
 pub fn parse(tokens: List(Token)) -> Expr {
@@ -11,7 +11,21 @@ pub fn parse(tokens: List(Token)) -> Expr {
 }
 
 fn parse_expression(tokens: List(Token)) -> ParseResult {
-  parse_primary(tokens)
+  parse_unary(tokens)
+}
+
+fn parse_unary(tokens: List(Token)) -> ParseResult {
+  case tokens {
+    [Bang, ..rest] -> {
+      let Done(expr, remaining) = parse_unary(rest)
+      Done(Unary(NotOp, expr), remaining)
+    }
+    [Minus, ..rest] -> {
+      let Done(expr, remaining) = parse_unary(rest)
+      Done(Unary(NegateOp, expr), remaining)
+    }
+    _ -> parse_primary(tokens)
+  }
 }
 
 fn parse_primary(tokens: List(Token)) -> ParseResult {
