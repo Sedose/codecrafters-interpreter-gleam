@@ -3,7 +3,7 @@ import ast_printer
 import external_things.{exit}
 import gleam/io
 import parser.{parse}
-import printer.{print}
+import tokenization_printer.{print}
 import simplifile.{describe_error}
 import tokenizer.{tokenize}
 
