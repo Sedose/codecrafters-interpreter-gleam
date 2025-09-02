@@ -1,13 +1,15 @@
 import data_def.{
   type Expr, FalseLiteral, Grouping, Literal, NilLiteral, NumberLiteral,
   StringLiteral, TrueLiteral, Unary, type UnaryOp, NotOp, NegateOp,
-  Binary, type BinaryOp, MultiplyOp, DivideOp,
+  Binary, type BinaryOp, MultiplyOp, DivideOp, AddOp, SubtractOp,
 }
 import gleam/float
 import gleam/io
 
 pub fn print(expr: Expr) -> Nil {
-  io.println(format(expr))
+  expr 
+  |> format 
+  |> io.println
 }
 
 fn format(expr: Expr) -> String {
@@ -39,5 +41,7 @@ fn format_binary_op(op: BinaryOp) -> String {
   case op {
     MultiplyOp -> "*"
     DivideOp -> "/"
+    AddOp -> "+"
+    SubtractOp -> "-"
   }
 }

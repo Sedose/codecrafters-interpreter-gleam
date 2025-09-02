@@ -2,7 +2,7 @@ import data_def.{
   type Expr, type Token, FalseLiteral, FalseToken, Grouping, LeftParen, Literal,
   NilLiteral, NilToken, Number, NumberLiteral, RightParen, String, StringLiteral,
   TrueLiteral, TrueToken, Unary, NotOp, NegateOp, Bang, Minus,
-  Binary, MultiplyOp, DivideOp, Star, Slash,
+  Binary, MultiplyOp, DivideOp, Star, Slash, Plus, AddOp, SubtractOp,
 }
 
 pub fn parse(tokens: List(Token)) -> Expr {
@@ -12,7 +12,26 @@ pub fn parse(tokens: List(Token)) -> Expr {
 }
 
 fn parse_expression(tokens: List(Token)) -> ParseResult {
-  parse_factor(tokens)
+  parse_term(tokens)
+}
+
+fn parse_term(tokens: List(Token)) -> ParseResult {
+  let Done(left, rest) = parse_factor(tokens)
+  parse_term_tail(left, rest)
+}
+
+fn parse_term_tail(left: Expr, tokens: List(Token)) -> ParseResult {
+  case tokens {
+    [Plus, ..after_op] -> {
+      let Done(right, rest) = parse_factor(after_op)
+      parse_term_tail(Binary(AddOp, left, right), rest)
+    }
+    [Minus, ..after_op] -> {
+      let Done(right, rest) = parse_factor(after_op)
+      parse_term_tail(Binary(SubtractOp, left, right), rest)
+    }
+    _ -> Done(left, tokens)
+  }
 }
 
 fn parse_factor(tokens: List(Token)) -> ParseResult {

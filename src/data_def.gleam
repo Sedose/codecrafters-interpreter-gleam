@@ -48,6 +48,8 @@ pub type UnaryOp {
 pub type BinaryOp {
   MultiplyOp
   DivideOp
+  AddOp
+  SubtractOp
 }
 
 pub type Expr {
