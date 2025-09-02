@@ -45,10 +45,16 @@ pub type UnaryOp {
   NegateOp
 }
 
+pub type BinaryOp {
+  MultiplyOp
+  DivideOp
+}
+
 pub type Expr {
   Literal(value: LiteralValue)
   Grouping(inner: Expr)
   Unary(op: UnaryOp, right: Expr)
+  Binary(op: BinaryOp, left: Expr, right: Expr)
 }
 
 pub type LiteralValue {
