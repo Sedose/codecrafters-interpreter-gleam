@@ -54,6 +54,8 @@ pub type BinaryOp {
   GreaterEqualOp
   LessOp
   LessEqualOp
+  EqualEqualOp
+  NotEqualOp
 }
 
 pub type Expr {

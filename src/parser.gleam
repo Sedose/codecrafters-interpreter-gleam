@@ -1,9 +1,10 @@
 import data_def.{
-  type Expr, type Token, AddOp, Bang, Binary, DivideOp, FalseLiteral, FalseToken,
-  Greater, GreaterEqual, GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less,
-  LessEqual, LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp,
-  NilLiteral, NilToken, NotOp, Number, NumberLiteral, Plus, RightParen, Slash,
-  Star, String, StringLiteral, SubtractOp, TrueLiteral, TrueToken, Unary,
+  type BinaryOp, type Expr, type Token, AddOp, Bang, BangEqual, Binary, DivideOp,
+  EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater, GreaterEqual,
+  GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less, LessEqual, LessEqualOp,
+  LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral, NilToken, NotEqualOp,
+  NotOp, Number, NumberLiteral, Plus, RightParen, Slash, Star, String,
+  StringLiteral, SubtractOp, TrueLiteral, TrueToken, Unary,
 }
 
 pub fn parse(tokens: List(Token)) -> Expr {
@@ -13,7 +14,26 @@ pub fn parse(tokens: List(Token)) -> Expr {
 }
 
 fn parse_expression(tokens: List(Token)) -> ParseResult {
-  parse_comparison(tokens)
+  parse_equality(tokens)
+}
+
+fn parse_equality(tokens: List(Token)) -> ParseResult {
+  let Done(left, rest) = parse_comparison(tokens)
+  parse_equality_tail(left, rest)
+}
+
+fn parse_equality_tail(left: Expr, tokens: List(Token)) -> ParseResult {
+  case tokens {
+    [EqualEqual, ..after_op] -> {
+      let Done(right, rest) = parse_comparison(after_op)
+      parse_equality_tail(Binary(EqualEqualOp, left, right), rest)
+    }
+    [BangEqual, ..after_op] -> {
+      let Done(right, rest) = parse_comparison(after_op)
+      parse_equality_tail(Binary(NotEqualOp, left, right), rest)
+    }
+    _ -> Done(left, tokens)
+  }
 }
 
 fn parse_comparison(tokens: List(Token)) -> ParseResult {
