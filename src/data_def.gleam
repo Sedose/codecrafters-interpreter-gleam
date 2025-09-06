@@ -50,6 +50,10 @@ pub type BinaryOp {
   DivideOp
   AddOp
   SubtractOp
+  GreaterOp
+  GreaterEqualOp
+  LessOp
+  LessEqualOp
 }
 
 pub type Expr {

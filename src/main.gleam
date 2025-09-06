@@ -3,8 +3,8 @@ import ast_printer
 import external_things.{exit}
 import gleam/io
 import parser.{parse}
-import tokenization_printer.{print}
 import simplifile.{describe_error}
+import tokenization_printer.{print}
 import tokenizer.{tokenize}
 
 const exit_code_success = 0

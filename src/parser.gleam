@@ -1,8 +1,9 @@
 import data_def.{
-  type Expr, type Token, FalseLiteral, FalseToken, Grouping, LeftParen, Literal,
-  NilLiteral, NilToken, Number, NumberLiteral, RightParen, String, StringLiteral,
-  TrueLiteral, TrueToken, Unary, NotOp, NegateOp, Bang, Minus,
-  Binary, MultiplyOp, DivideOp, Star, Slash, Plus, AddOp, SubtractOp,
+  type Expr, type Token, AddOp, Bang, Binary, DivideOp, FalseLiteral, FalseToken,
+  Greater, GreaterEqual, GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less,
+  LessEqual, LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp,
+  NilLiteral, NilToken, NotOp, Number, NumberLiteral, Plus, RightParen, Slash,
+  Star, String, StringLiteral, SubtractOp, TrueLiteral, TrueToken, Unary,
 }
 
 pub fn parse(tokens: List(Token)) -> Expr {
@@ -12,7 +13,34 @@ pub fn parse(tokens: List(Token)) -> Expr {
 }
 
 fn parse_expression(tokens: List(Token)) -> ParseResult {
-  parse_term(tokens)
+  parse_comparison(tokens)
+}
+
+fn parse_comparison(tokens: List(Token)) -> ParseResult {
+  let Done(left, rest) = parse_term(tokens)
+  parse_comparison_tail(left, rest)
+}
+
+fn parse_comparison_tail(left: Expr, tokens: List(Token)) -> ParseResult {
+  case tokens {
+    [Greater, ..after_op] -> {
+      let Done(right, rest) = parse_term(after_op)
+      parse_comparison_tail(Binary(GreaterOp, left, right), rest)
+    }
+    [GreaterEqual, ..after_op] -> {
+      let Done(right, rest) = parse_term(after_op)
+      parse_comparison_tail(Binary(GreaterEqualOp, left, right), rest)
+    }
+    [Less, ..after_op] -> {
+      let Done(right, rest) = parse_term(after_op)
+      parse_comparison_tail(Binary(LessOp, left, right), rest)
+    }
+    [LessEqual, ..after_op] -> {
+      let Done(right, rest) = parse_term(after_op)
+      parse_comparison_tail(Binary(LessEqualOp, left, right), rest)
+    }
+    _ -> Done(left, tokens)
+  }
 }
 
 fn parse_term(tokens: List(Token)) -> ParseResult {
