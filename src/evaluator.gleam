@@ -1,6 +1,6 @@
 import data_def.{
-  type Expr, type LiteralValue, Binary, Grouping, Literal, Unary, FalseLiteral,
-  NilLiteral, NumberLiteral, StringLiteral, TrueLiteral,
+  type Expr, type LiteralValue, Binary, FalseLiteral, Grouping, Literal,
+  NilLiteral, NumberLiteral, StringLiteral, TrueLiteral, Unary,
 }
 import gleam/float
 

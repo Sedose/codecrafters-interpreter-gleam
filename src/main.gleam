@@ -1,5 +1,6 @@
 import argv
 import ast_printer
+import data_def.{type Expr, type LiteralValue, type ParseError, type TokenizationResult}
 import evaluator
 import external_things.{exit}
 import gleam/io
@@ -78,30 +79,38 @@ fn process_parse(contents: String) -> Int {
 }
 
 fn process_evaluate(contents: String) -> Int {
-  let tokenization_result = tokenize(contents)
+  contents |> tokenize |> evaluate_tokenization_result
+}
 
+fn evaluate_tokenization_result(tokenization_result: TokenizationResult) -> Int {
   case tokenization_result.errors {
-    [] ->
-      case parse(tokenization_result.tokens) {
-        Ok(expression) ->
-          case evaluator.evaluate(expression) {
-            Ok(value) -> {
-              value |> evaluator.format |> io.println
-              exit_code_success
-            }
-            Error(message) -> {
-              message |> io.println_error
-              exit_code_runtime_error
-            }
-          }
-        Error(error) -> {
-          error |> format_error |> io.println_error
-          exit_code_tokenization_error
-        }
-      }
+    [] -> tokenization_result.tokens |> parse |> evaluate_parse_result
     errors -> {
       errors |> print_errors
       exit_code_tokenization_error
+    }
+  }
+}
+
+fn evaluate_parse_result(parse_result: Result(Expr, ParseError)) -> Int {
+  case parse_result {
+    Ok(expression) -> expression |> evaluator.evaluate |> evaluate_runtime_result
+    Error(error) -> {
+      error |> format_error |> io.println_error
+      exit_code_tokenization_error
+    }
+  }
+}
+
+fn evaluate_runtime_result(evaluation_result: Result(LiteralValue, String)) -> Int {
+  case evaluation_result {
+    Ok(value) -> {
+      value |> evaluator.format |> io.println
+      exit_code_success
+    }
+    Error(message) -> {
+      message |> io.println_error
+      exit_code_runtime_error
     }
   }
 }

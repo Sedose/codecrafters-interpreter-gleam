@@ -13,6 +13,7 @@ pattern matching on strings prefixes would work really well here and would mean 
 
 - Prefer pipeline style (`value |> transform |> consume`) over step-by-step temporary-variable flows like `result1 = func1(value)` then `result2 = func2(result1)`.
 
+- After task completion, run `gleam format`.
 
 ## Cool prompts to enhance a project
 
