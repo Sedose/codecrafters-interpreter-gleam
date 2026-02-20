@@ -11,3 +11,5 @@ pattern matching on strings prefixes would work really well here and would mean 
 
 - Appending to lists always copies them entirely, it's better to build the list in reverse and then reverse once right at the end before you return.
 
+- Prefer pipeline style (`value |> transform |> consume`) over step-by-step temporary-variable flows like `result1 = func1(value)` then `result2 = func2(result1)`.
+

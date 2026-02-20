@@ -2,9 +2,10 @@ import argv
 import ast_printer
 import external_things.{exit}
 import gleam/io
+import parse_error_printer.{format_error}
 import parser.{parse}
 import simplifile.{describe_error}
-import tokenization_printer.{print}
+import tokenization_printer.{print, print_errors}
 import tokenizer.{tokenize}
 
 const exit_code_success = 0
@@ -13,7 +14,7 @@ const exit_code_general_error = 1
 
 const exit_code_tokenization_error = 65
 
-const usage_message = "Usage: ./your_program.sh tokenize <filename>"
+const usage_message = "Usage: ./your_program.sh tokenize|parse <filename>"
 
 pub fn main() -> Nil {
   let exit_code = case argv.load().arguments {
@@ -51,11 +52,23 @@ fn process_tokenize(contents: String) -> Int {
 }
 
 fn process_parse(contents: String) -> Int {
-  contents
-  |> tokenizer.tokenize
-  |> fn(result) { result.tokens }
-  |> parse
-  |> ast_printer.print
+  let tokenization_result = tokenize(contents)
 
-  exit_code_success
+  case tokenization_result.errors {
+    [] ->
+      case parse(tokenization_result.tokens) {
+        Ok(expression) -> {
+          expression |> ast_printer.print
+          exit_code_success
+        }
+        Error(error) -> {
+          error |> format_error |> io.println_error
+          exit_code_tokenization_error
+        }
+      }
+    errors -> {
+      errors |> print_errors
+      exit_code_tokenization_error
+    }
+  }
 }

@@ -13,14 +13,17 @@ import data_def.{
 }
 
 pub fn print(result: TokenizationResult) -> Nil {
-  result.errors
-  |> list.map(format_error)
-  |> list.map(io.println_error)
+  result.errors |> print_errors
 
   result.tokens
   |> list.map(format_token)
   |> list.map(io.println)
 
+  Nil
+}
+
+pub fn print_errors(errors: List(TokenizationError)) -> Nil {
+  errors |> list.map(format_error) |> list.map(io.println_error)
   Nil
 }
 

@@ -1,138 +1,207 @@
 import data_def.{
-  type BinaryOp, type Expr, type Token, AddOp, Bang, BangEqual, Binary, DivideOp,
-  EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater, GreaterEqual,
-  GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less, LessEqual, LessEqualOp,
-  LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral, NilToken, NotEqualOp,
-  NotOp, Number, NumberLiteral, Plus, RightParen, Slash, Star, String,
-  StringLiteral, SubtractOp, TrueLiteral, TrueToken, Unary,
+  type Expr, type ParseError, type Token, AddOp, Bang, BangEqual, Binary,
+  DivideOp, Eof, EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater,
+  GreaterEqual, GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less, LessEqual,
+  LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral,
+  NilToken, NotEqualOp, NotOp, Number, NumberLiteral, ParseErrorAtEnd,
+  ParseErrorAtToken, Plus, RightParen, Slash, Star, String, StringLiteral,
+  SubtractOp, TrueLiteral, TrueToken, Unary,
 }
 
-pub fn parse(tokens: List(Token)) -> Expr {
+pub fn parse(tokens: List(Token)) -> Result(Expr, ParseError) {
   case parse_expression(tokens) {
-    Done(expr, _) -> expr
+    Ok(#(expr, [Eof])) -> Ok(expr)
+    Ok(#(expr, [])) -> Ok(expr)
+    Ok(#(_, [token, ..])) ->
+      Error(ParseErrorAtToken(token, "Expect end of expression."))
+    Error(error) -> Error(error)
   }
 }
 
-fn parse_expression(tokens: List(Token)) -> ParseResult {
+fn parse_expression(
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
   parse_equality(tokens)
 }
 
-fn parse_equality(tokens: List(Token)) -> ParseResult {
-  let Done(left, rest) = parse_comparison(tokens)
-  parse_equality_tail(left, rest)
+fn parse_equality(
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parse_comparison(tokens) {
+    Ok(#(left, rest)) -> parse_equality_tail(left, rest)
+    Error(error) -> Error(error)
+  }
 }
 
-fn parse_equality_tail(left: Expr, tokens: List(Token)) -> ParseResult {
+fn parse_equality_tail(
+  left: Expr,
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
   case tokens {
     [EqualEqual, ..after_op] -> {
-      let Done(right, rest) = parse_comparison(after_op)
-      parse_equality_tail(Binary(EqualEqualOp, left, right), rest)
+      case parse_comparison(after_op) {
+        Ok(#(right, rest)) ->
+          parse_equality_tail(Binary(EqualEqualOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
     [BangEqual, ..after_op] -> {
-      let Done(right, rest) = parse_comparison(after_op)
-      parse_equality_tail(Binary(NotEqualOp, left, right), rest)
+      case parse_comparison(after_op) {
+        Ok(#(right, rest)) ->
+          parse_equality_tail(Binary(NotEqualOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
-    _ -> Done(left, tokens)
+    _ -> Ok(#(left, tokens))
   }
 }
 
-fn parse_comparison(tokens: List(Token)) -> ParseResult {
-  let Done(left, rest) = parse_term(tokens)
-  parse_comparison_tail(left, rest)
+fn parse_comparison(
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parse_term(tokens) {
+    Ok(#(left, rest)) -> parse_comparison_tail(left, rest)
+    Error(error) -> Error(error)
+  }
 }
 
-fn parse_comparison_tail(left: Expr, tokens: List(Token)) -> ParseResult {
+fn parse_comparison_tail(
+  left: Expr,
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
   case tokens {
     [Greater, ..after_op] -> {
-      let Done(right, rest) = parse_term(after_op)
-      parse_comparison_tail(Binary(GreaterOp, left, right), rest)
+      case parse_term(after_op) {
+        Ok(#(right, rest)) ->
+          parse_comparison_tail(Binary(GreaterOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
     [GreaterEqual, ..after_op] -> {
-      let Done(right, rest) = parse_term(after_op)
-      parse_comparison_tail(Binary(GreaterEqualOp, left, right), rest)
+      case parse_term(after_op) {
+        Ok(#(right, rest)) ->
+          parse_comparison_tail(Binary(GreaterEqualOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
     [Less, ..after_op] -> {
-      let Done(right, rest) = parse_term(after_op)
-      parse_comparison_tail(Binary(LessOp, left, right), rest)
+      case parse_term(after_op) {
+        Ok(#(right, rest)) ->
+          parse_comparison_tail(Binary(LessOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
     [LessEqual, ..after_op] -> {
-      let Done(right, rest) = parse_term(after_op)
-      parse_comparison_tail(Binary(LessEqualOp, left, right), rest)
+      case parse_term(after_op) {
+        Ok(#(right, rest)) ->
+          parse_comparison_tail(Binary(LessEqualOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
-    _ -> Done(left, tokens)
+    _ -> Ok(#(left, tokens))
   }
 }
 
-fn parse_term(tokens: List(Token)) -> ParseResult {
-  let Done(left, rest) = parse_factor(tokens)
-  parse_term_tail(left, rest)
+fn parse_term(tokens: List(Token)) -> Result(#(Expr, List(Token)), ParseError) {
+  case parse_factor(tokens) {
+    Ok(#(left, rest)) -> parse_term_tail(left, rest)
+    Error(error) -> Error(error)
+  }
 }
 
-fn parse_term_tail(left: Expr, tokens: List(Token)) -> ParseResult {
+fn parse_term_tail(
+  left: Expr,
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
   case tokens {
     [Plus, ..after_op] -> {
-      let Done(right, rest) = parse_factor(after_op)
-      parse_term_tail(Binary(AddOp, left, right), rest)
+      case parse_factor(after_op) {
+        Ok(#(right, rest)) -> parse_term_tail(Binary(AddOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
     [Minus, ..after_op] -> {
-      let Done(right, rest) = parse_factor(after_op)
-      parse_term_tail(Binary(SubtractOp, left, right), rest)
+      case parse_factor(after_op) {
+        Ok(#(right, rest)) ->
+          parse_term_tail(Binary(SubtractOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
-    _ -> Done(left, tokens)
+    _ -> Ok(#(left, tokens))
   }
 }
 
-fn parse_factor(tokens: List(Token)) -> ParseResult {
-  let Done(left, rest) = parse_unary(tokens)
-  parse_factor_tail(left, rest)
+fn parse_factor(tokens: List(Token)) -> Result(#(Expr, List(Token)), ParseError) {
+  case parse_unary(tokens) {
+    Ok(#(left, rest)) -> parse_factor_tail(left, rest)
+    Error(error) -> Error(error)
+  }
 }
 
-fn parse_factor_tail(left: Expr, tokens: List(Token)) -> ParseResult {
+fn parse_factor_tail(
+  left: Expr,
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
   case tokens {
     [Star, ..after_op] -> {
-      let Done(right, rest) = parse_unary(after_op)
-      parse_factor_tail(Binary(MultiplyOp, left, right), rest)
+      case parse_unary(after_op) {
+        Ok(#(right, rest)) ->
+          parse_factor_tail(Binary(MultiplyOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
     [Slash, ..after_op] -> {
-      let Done(right, rest) = parse_unary(after_op)
-      parse_factor_tail(Binary(DivideOp, left, right), rest)
+      case parse_unary(after_op) {
+        Ok(#(right, rest)) ->
+          parse_factor_tail(Binary(DivideOp, left, right), rest)
+        Error(error) -> Error(error)
+      }
     }
-    _ -> Done(left, tokens)
+    _ -> Ok(#(left, tokens))
   }
 }
 
-fn parse_unary(tokens: List(Token)) -> ParseResult {
+fn parse_unary(tokens: List(Token)) -> Result(#(Expr, List(Token)), ParseError) {
   case tokens {
     [Bang, ..rest] -> {
-      let Done(expr, remaining) = parse_unary(rest)
-      Done(Unary(NotOp, expr), remaining)
+      case parse_unary(rest) {
+        Ok(#(expr, remaining)) -> Ok(#(Unary(NotOp, expr), remaining))
+        Error(error) -> Error(error)
+      }
     }
     [Minus, ..rest] -> {
-      let Done(expr, remaining) = parse_unary(rest)
-      Done(Unary(NegateOp, expr), remaining)
+      case parse_unary(rest) {
+        Ok(#(expr, remaining)) -> Ok(#(Unary(NegateOp, expr), remaining))
+        Error(error) -> Error(error)
+      }
     }
     _ -> parse_primary(tokens)
   }
 }
 
-fn parse_primary(tokens: List(Token)) -> ParseResult {
+fn parse_primary(
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
   case tokens {
-    [TrueToken, ..rest] -> Done(Literal(TrueLiteral), rest)
-    [FalseToken, ..rest] -> Done(Literal(FalseLiteral), rest)
-    [NilToken, ..rest] -> Done(Literal(NilLiteral), rest)
-    [Number(_, value), ..rest] -> Done(Literal(NumberLiteral(value)), rest)
-    [String(s), ..rest] -> Done(Literal(StringLiteral(s)), rest)
+    [TrueToken, ..rest] -> Ok(#(Literal(TrueLiteral), rest))
+    [FalseToken, ..rest] -> Ok(#(Literal(FalseLiteral), rest))
+    [NilToken, ..rest] -> Ok(#(Literal(NilLiteral), rest))
+    [Number(_, value), ..rest] -> Ok(#(Literal(NumberLiteral(value)), rest))
+    [String(s), ..rest] -> Ok(#(Literal(StringLiteral(s)), rest))
     [LeftParen, ..after_lparen] -> {
-      let Done(inner, after_inner) = parse_expression(after_lparen)
-      case after_inner {
-        [RightParen, ..after_rparen] -> Done(Grouping(inner), after_rparen)
-        _ -> Done(Grouping(inner), after_inner)
+      case parse_expression(after_lparen) {
+        Ok(#(inner, [RightParen, ..after_rparen])) ->
+          Ok(#(Grouping(inner), after_rparen))
+        Ok(#(_, [Eof, ..])) ->
+          Error(ParseErrorAtEnd("Expect ')' after expression."))
+        Ok(#(_, [token, ..])) ->
+          Error(ParseErrorAtToken(token, "Expect ')' after expression."))
+        Ok(#(_, [])) -> Error(ParseErrorAtEnd("Expect ')' after expression."))
+        Error(error) -> Error(error)
       }
     }
-    _ -> Done(Literal(NilLiteral), tokens)
+    [Eof, ..] -> Error(ParseErrorAtEnd("Expect expression."))
+    [token, ..] -> Error(ParseErrorAtToken(token, "Expect expression."))
+    [] -> Error(ParseErrorAtEnd("Expect expression."))
   }
-}
-
-type ParseResult {
-  Done(expr: Expr, rest: List(Token))
 }

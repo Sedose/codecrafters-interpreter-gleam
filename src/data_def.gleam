@@ -81,3 +81,8 @@ pub type TokenizationError {
 pub type TokenizationResult {
   TokenizationResult(tokens: List(Token), errors: List(TokenizationError))
 }
+
+pub type ParseError {
+  ParseErrorAtToken(token: Token, message: String)
+  ParseErrorAtEnd(message: String)
+}
