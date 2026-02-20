@@ -1,5 +1,6 @@
 import argv
 import ast_printer
+import evaluator
 import external_things.{exit}
 import gleam/io
 import parse_error_printer.{format_error}
@@ -14,12 +15,15 @@ const exit_code_general_error = 1
 
 const exit_code_tokenization_error = 65
 
-const usage_message = "Usage: ./your_program.sh tokenize|parse <filename>"
+const exit_code_runtime_error = 70
+
+const usage_message = "Usage: ./your_program.sh tokenize|parse|evaluate <filename>"
 
 pub fn main() -> Nil {
   let exit_code = case argv.load().arguments {
     ["tokenize", filename] -> execute_with_file(filename, process_tokenize)
     ["parse", filename] -> execute_with_file(filename, process_parse)
+    ["evaluate", filename] -> execute_with_file(filename, process_evaluate)
     _ -> {
       io.println_error(usage_message)
       exit_code_general_error
@@ -61,6 +65,35 @@ fn process_parse(contents: String) -> Int {
           expression |> ast_printer.print
           exit_code_success
         }
+        Error(error) -> {
+          error |> format_error |> io.println_error
+          exit_code_tokenization_error
+        }
+      }
+    errors -> {
+      errors |> print_errors
+      exit_code_tokenization_error
+    }
+  }
+}
+
+fn process_evaluate(contents: String) -> Int {
+  let tokenization_result = tokenize(contents)
+
+  case tokenization_result.errors {
+    [] ->
+      case parse(tokenization_result.tokens) {
+        Ok(expression) ->
+          case evaluator.evaluate(expression) {
+            Ok(value) -> {
+              value |> evaluator.format |> io.println
+              exit_code_success
+            }
+            Error(message) -> {
+              message |> io.println_error
+              exit_code_runtime_error
+            }
+          }
         Error(error) -> {
           error |> format_error |> io.println_error
           exit_code_tokenization_error

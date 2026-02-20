@@ -1,4 +1,4 @@
-In Gleam, 
+## In Gleam (this project is entirely usign Gleam)
 
 - we use Result(a, Nil) instead of Option for most things including returning optional data.
 
@@ -13,3 +13,32 @@ pattern matching on strings prefixes would work really well here and would mean 
 
 - Prefer pipeline style (`value |> transform |> consume`) over step-by-step temporary-variable flows like `result1 = func1(value)` then `result2 = func2(result1)`.
 
+
+## Cool prompts to enhance a project
+
+### evaluate all modules for high cohesion
+
+Let the agent work till the result is smth like:
+
+```
+Module-by-module:
+
+  1. High cohesion: src/main.gleam
+     Single responsibility: CLI orchestration and exit-code routing.
+  2. High cohesion: src/tokenizer.gleam
+     Single responsibility: lexical scanning/tokenization.
+  3. High cohesion: src/parser.gleam
+     Single responsibility: parse tokens into AST / parse errors.
+  4. High cohesion: src/tokenization_printer.gleam
+     Single responsibility: tokenization/error output formatting + printing.
+  5. High cohesion: src/parse_error_printer.gleam
+     Single responsibility: parse error message formatting.
+  6. High cohesion: src/ast_printer.gleam
+     Single responsibility: AST rendering.
+  7. High cohesion: src/util.gleam
+     Single responsibility: character classification helpers.
+  8. High cohesion: src/external_things.gleam
+     Single responsibility: external runtime boundary (exit).
+  9. High cohesion: src/data_def.gleam
+     Single responsibility: shared domain/ADT definitions.
+```
