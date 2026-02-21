@@ -21,8 +21,6 @@ pattern matching on strings prefixes would work really well here and would mean 
   3. Run `gleam check`.
   4. Resolve errors if any.
   5. Repeat steps 1-4 until clean.
-  6. Run `codecrafters submit`.
-  7. Explain what the error is or what needs to be implemented; explain only, do not implement yet.
   Do not run `gleam check` multiple times without code changes.
 
 ## Cool prompts to enhance a project

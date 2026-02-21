@@ -1,9 +1,10 @@
 import data_def.{
-  type Expr, type ParseError, type Token, AddOp, Bang, BangEqual, Binary,
-  DivideOp, Eof, EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater,
-  GreaterEqual, GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less, LessEqual,
-  LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral,
-  NilToken, NotEqualOp, NotOp, Number, NumberLiteral, ParseErrorAtEnd,
+  type BinaryOp, type Expr, type OperatorParseResult, type ParseError,
+  type Token, type UnaryOp, AddOp, Bang, BangEqual, Binary, DivideOp, Eof,
+  EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater, GreaterEqual,
+  GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less, LessEqual, LessEqualOp,
+  LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral, NilToken, NoOperator,
+  NotEqualOp, NotOp, Number, NumberLiteral, Operator, ParseErrorAtEnd,
   ParseErrorAtToken, Plus, RightParen, Slash, Star, String, StringLiteral,
   SubtractOp, TrueLiteral, TrueToken, Unary,
 }
@@ -27,155 +28,154 @@ fn parse_expression(
 fn parse_equality(
   tokens: List(Token),
 ) -> Result(#(Expr, List(Token)), ParseError) {
-  case parse_comparison(tokens) {
-    Ok(#(left, rest)) -> parse_equality_tail(left, rest)
-    Error(error) -> Error(error)
-  }
-}
-
-fn parse_equality_tail(
-  left: Expr,
-  tokens: List(Token),
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case tokens {
-    [EqualEqual, ..after_op] -> {
-      case parse_comparison(after_op) {
-        Ok(#(right, rest)) ->
-          parse_equality_tail(Binary(EqualEqualOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    [BangEqual, ..after_op] -> {
-      case parse_comparison(after_op) {
-        Ok(#(right, rest)) ->
-          parse_equality_tail(Binary(NotEqualOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    _ -> Ok(#(left, tokens))
-  }
+  parse_left_associative(tokens, parse_comparison, parse_equality_op)
 }
 
 fn parse_comparison(
   tokens: List(Token),
 ) -> Result(#(Expr, List(Token)), ParseError) {
-  case parse_term(tokens) {
-    Ok(#(left, rest)) -> parse_comparison_tail(left, rest)
-    Error(error) -> Error(error)
-  }
-}
-
-fn parse_comparison_tail(
-  left: Expr,
-  tokens: List(Token),
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case tokens {
-    [Greater, ..after_op] -> {
-      case parse_term(after_op) {
-        Ok(#(right, rest)) ->
-          parse_comparison_tail(Binary(GreaterOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    [GreaterEqual, ..after_op] -> {
-      case parse_term(after_op) {
-        Ok(#(right, rest)) ->
-          parse_comparison_tail(Binary(GreaterEqualOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    [Less, ..after_op] -> {
-      case parse_term(after_op) {
-        Ok(#(right, rest)) ->
-          parse_comparison_tail(Binary(LessOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    [LessEqual, ..after_op] -> {
-      case parse_term(after_op) {
-        Ok(#(right, rest)) ->
-          parse_comparison_tail(Binary(LessEqualOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    _ -> Ok(#(left, tokens))
-  }
+  parse_left_associative(tokens, parse_term, parse_comparison_op)
 }
 
 fn parse_term(tokens: List(Token)) -> Result(#(Expr, List(Token)), ParseError) {
-  case parse_factor(tokens) {
-    Ok(#(left, rest)) -> parse_term_tail(left, rest)
-    Error(error) -> Error(error)
-  }
-}
-
-fn parse_term_tail(
-  left: Expr,
-  tokens: List(Token),
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case tokens {
-    [Plus, ..after_op] -> {
-      case parse_factor(after_op) {
-        Ok(#(right, rest)) -> parse_term_tail(Binary(AddOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    [Minus, ..after_op] -> {
-      case parse_factor(after_op) {
-        Ok(#(right, rest)) ->
-          parse_term_tail(Binary(SubtractOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    _ -> Ok(#(left, tokens))
-  }
+  parse_left_associative(tokens, parse_factor, parse_term_op)
 }
 
 fn parse_factor(tokens: List(Token)) -> Result(#(Expr, List(Token)), ParseError) {
-  case parse_unary(tokens) {
-    Ok(#(left, rest)) -> parse_factor_tail(left, rest)
+  parse_left_associative(tokens, parse_unary, parse_factor_op)
+}
+
+fn parse_left_associative(
+  tokens: List(Token),
+  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
+  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  tokens
+  |> parse_operand
+  |> resolve_left_operand(parse_operand, parse_operator)
+}
+
+fn resolve_left_operand(
+  parsed_operand: Result(#(Expr, List(Token)), ParseError),
+  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
+  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parsed_operand {
+    Ok(#(left, rest)) ->
+      parse_left_associative_tail(left, rest, parse_operand, parse_operator)
     Error(error) -> Error(error)
   }
 }
 
-fn parse_factor_tail(
+fn parse_left_associative_tail(
   left: Expr,
   tokens: List(Token),
+  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
+  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
 ) -> Result(#(Expr, List(Token)), ParseError) {
+  tokens
+  |> parse_operator
+  |> resolve_left_operator(left, tokens, parse_operand, parse_operator)
+}
+
+fn resolve_left_operator(
+  parsed_operator: OperatorParseResult(BinaryOp),
+  left: Expr,
+  tokens: List(Token),
+  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
+  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parsed_operator {
+    Operator(op, after_op) ->
+      after_op
+      |> parse_operand
+      |> build_left_associative(op, left, parse_operand, parse_operator)
+    NoOperator -> Ok(#(left, tokens))
+  }
+}
+
+fn build_left_associative(
+  parsed_right_operand: Result(#(Expr, List(Token)), ParseError),
+  op: BinaryOp,
+  left: Expr,
+  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
+  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parsed_right_operand {
+    Ok(#(right, rest)) ->
+      parse_left_associative_tail(
+        Binary(op, left, right),
+        rest,
+        parse_operand,
+        parse_operator,
+      )
+    Error(error) -> Error(error)
+  }
+}
+
+fn parse_equality_op(tokens: List(Token)) -> OperatorParseResult(BinaryOp) {
   case tokens {
-    [Star, ..after_op] -> {
-      case parse_unary(after_op) {
-        Ok(#(right, rest)) ->
-          parse_factor_tail(Binary(MultiplyOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    [Slash, ..after_op] -> {
-      case parse_unary(after_op) {
-        Ok(#(right, rest)) ->
-          parse_factor_tail(Binary(DivideOp, left, right), rest)
-        Error(error) -> Error(error)
-      }
-    }
-    _ -> Ok(#(left, tokens))
+    [EqualEqual, ..rest] -> Operator(EqualEqualOp, rest)
+    [BangEqual, ..rest] -> Operator(NotEqualOp, rest)
+    _ -> NoOperator
+  }
+}
+
+fn parse_comparison_op(tokens: List(Token)) -> OperatorParseResult(BinaryOp) {
+  case tokens {
+    [Greater, ..rest] -> Operator(GreaterOp, rest)
+    [GreaterEqual, ..rest] -> Operator(GreaterEqualOp, rest)
+    [Less, ..rest] -> Operator(LessOp, rest)
+    [LessEqual, ..rest] -> Operator(LessEqualOp, rest)
+    _ -> NoOperator
+  }
+}
+
+fn parse_term_op(tokens: List(Token)) -> OperatorParseResult(BinaryOp) {
+  case tokens {
+    [Plus, ..rest] -> Operator(AddOp, rest)
+    [Minus, ..rest] -> Operator(SubtractOp, rest)
+    _ -> NoOperator
+  }
+}
+
+fn parse_factor_op(tokens: List(Token)) -> OperatorParseResult(BinaryOp) {
+  case tokens {
+    [Star, ..rest] -> Operator(MultiplyOp, rest)
+    [Slash, ..rest] -> Operator(DivideOp, rest)
+    _ -> NoOperator
   }
 }
 
 fn parse_unary(tokens: List(Token)) -> Result(#(Expr, List(Token)), ParseError) {
+  tokens |> parse_unary_prefix |> resolve_unary_prefix(tokens)
+}
+
+fn resolve_unary_prefix(
+  parsed_prefix: OperatorParseResult(UnaryOp),
+  tokens: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parsed_prefix {
+    Operator(op, rest) -> rest |> parse_unary |> build_unary(op)
+    NoOperator -> parse_primary(tokens)
+  }
+}
+
+fn build_unary(
+  parsed_unary: Result(#(Expr, List(Token)), ParseError),
+  op: UnaryOp,
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parsed_unary {
+    Ok(#(expr, remaining)) -> Ok(#(Unary(op, expr), remaining))
+    Error(error) -> Error(error)
+  }
+}
+
+fn parse_unary_prefix(tokens: List(Token)) -> OperatorParseResult(UnaryOp) {
   case tokens {
-    [Bang, ..rest] -> {
-      case parse_unary(rest) {
-        Ok(#(expr, remaining)) -> Ok(#(Unary(NotOp, expr), remaining))
-        Error(error) -> Error(error)
-      }
-    }
-    [Minus, ..rest] -> {
-      case parse_unary(rest) {
-        Ok(#(expr, remaining)) -> Ok(#(Unary(NegateOp, expr), remaining))
-        Error(error) -> Error(error)
-      }
-    }
-    _ -> parse_primary(tokens)
+    [Bang, ..rest] -> Operator(NotOp, rest)
+    [Minus, ..rest] -> Operator(NegateOp, rest)
+    _ -> NoOperator
   }
 }
 

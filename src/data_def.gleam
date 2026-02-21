@@ -86,3 +86,8 @@ pub type ParseError {
   ParseErrorAtToken(token: Token, message: String)
   ParseErrorAtEnd(message: String)
 }
+
+pub type OperatorParseResult(op) {
+  Operator(op: op, rest: List(Token))
+  NoOperator
+}

@@ -1,8 +1,8 @@
 import data_def.{
-  type BinaryOp, type Expr, type UnaryOp, AddOp, Binary, DivideOp, EqualEqualOp,
-  FalseLiteral, GreaterEqualOp, GreaterOp, Grouping, LessEqualOp, LessOp,
-  Literal, MultiplyOp, NegateOp, NilLiteral, NotEqualOp, NotOp, NumberLiteral,
-  StringLiteral, SubtractOp, TrueLiteral, Unary,
+  type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Binary,
+  DivideOp, EqualEqualOp, FalseLiteral, GreaterEqualOp, GreaterOp, Grouping,
+  LessEqualOp, LessOp, Literal, MultiplyOp, NegateOp, NilLiteral, NotEqualOp,
+  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary,
 }
 
 import gleam/float
@@ -16,14 +16,7 @@ pub fn print(expr: Expr) -> Nil {
 
 fn format(expr: Expr) -> String {
   case expr {
-    Literal(value) ->
-      case value {
-        TrueLiteral -> "true"
-        FalseLiteral -> "false"
-        NilLiteral -> "nil"
-        NumberLiteral(n) -> float.to_string(n)
-        StringLiteral(s) -> s
-      }
+    Literal(value) -> value |> format_literal
     Grouping(inner) -> "(group " <> format(inner) <> ")"
     Unary(op, right) ->
       "(" <> format_unary_op(op) <> " " <> format(right) <> ")"
@@ -35,6 +28,16 @@ fn format(expr: Expr) -> String {
       <> " "
       <> format(right)
       <> ")"
+  }
+}
+
+fn format_literal(value: LiteralValue) -> String {
+  case value {
+    TrueLiteral -> "true"
+    FalseLiteral -> "false"
+    NilLiteral -> "nil"
+    NumberLiteral(n) -> float.to_string(n)
+    StringLiteral(s) -> s
   }
 }
 
