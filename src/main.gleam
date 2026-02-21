@@ -1,6 +1,6 @@
 import argv
 import ast_printer
-import data_def.{type Expr, type LiteralValue, TokenizationResult}
+import data_def.{type Expr, type LiteralValue, type Token, TokenizationResult}
 import evaluator
 import external_things.{exit}
 import gleam/io
@@ -75,16 +75,19 @@ fn process_evaluate(contents: String) -> Int {
 
 fn tokenize_and_parse(contents: String) -> Result(Expr, Int) {
   case tokenize(contents) {
-    TokenizationResult(tokens: tokens, errors: []) ->
-      case parse(tokens) {
-        Ok(expression) -> Ok(expression)
-        Error(error) -> {
-          error |> format_error |> io.println_error
-          Error(exit_code_language_error)
-        }
-      }
+    TokenizationResult(tokens: tokens, errors: []) -> tokens |> parse_tokens
     TokenizationResult(tokens: _, errors: errors) -> {
       errors |> print_errors
+      Error(exit_code_language_error)
+    }
+  }
+}
+
+fn parse_tokens(tokens: List(Token)) -> Result(Expr, Int) {
+  case parse(tokens) {
+    Ok(expression) -> Ok(expression)
+    Error(error) -> {
+      error |> format_error |> io.println_error
       Error(exit_code_language_error)
     }
   }

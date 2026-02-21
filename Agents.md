@@ -13,7 +13,17 @@ pattern matching on strings prefixes would work really well here and would mean 
 
 - Prefer pipeline style (`value |> transform |> consume`) over step-by-step temporary-variable flows like `result1 = func1(value)` then `result2 = func2(result1)`.
 
-- After task completion, follow this loop only: run `gleam format`, resolve errors if any, run `gleam check`, resolve errors if any, repeat until clean. Do not run `gleam check` multiple times without code changes.
+- Obey denesting: when a function gets nested `case`/branching, extract focused helper functions to keep the top-level flow flat and readable.
+
+- After task completion, follow this pipeline only:
+  1. Run `gleam format`.
+  2. Resolve errors if any.
+  3. Run `gleam check`.
+  4. Resolve errors if any.
+  5. Repeat steps 1-4 until clean.
+  6. Run `codecrafters submit`.
+  7. Explain what the error is or what needs to be implemented; explain only, do not implement yet.
+  Do not run `gleam check` multiple times without code changes.
 
 ## Cool prompts to enhance a project
 
