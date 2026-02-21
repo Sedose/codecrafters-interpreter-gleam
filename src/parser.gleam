@@ -188,20 +188,24 @@ fn parse_primary(
     [NilToken, ..rest] -> Ok(#(Literal(NilLiteral), rest))
     [Number(_, value), ..rest] -> Ok(#(Literal(NumberLiteral(value)), rest))
     [String(s), ..rest] -> Ok(#(Literal(StringLiteral(s)), rest))
-    [LeftParen, ..after_lparen] -> {
-      case parse_expression(after_lparen) {
-        Ok(#(inner, [RightParen, ..after_rparen])) ->
-          Ok(#(Grouping(inner), after_rparen))
-        Ok(#(_, [Eof, ..])) ->
-          Error(ParseErrorAtEnd("Expect ')' after expression."))
-        Ok(#(_, [token, ..])) ->
-          Error(ParseErrorAtToken(token, "Expect ')' after expression."))
-        Ok(#(_, [])) -> Error(ParseErrorAtEnd("Expect ')' after expression."))
-        Error(error) -> Error(error)
-      }
-    }
+    [LeftParen, ..after_lparen] -> parse_grouping(after_lparen)
     [Eof, ..] -> Error(ParseErrorAtEnd("Expect expression."))
     [token, ..] -> Error(ParseErrorAtToken(token, "Expect expression."))
     [] -> Error(ParseErrorAtEnd("Expect expression."))
+  }
+}
+
+fn parse_grouping(
+  after_lparen: List(Token),
+) -> Result(#(Expr, List(Token)), ParseError) {
+  case parse_expression(after_lparen) {
+    Ok(#(inner, [RightParen, ..after_rparen])) ->
+      Ok(#(Grouping(inner), after_rparen))
+    Ok(#(_, [Eof, ..])) ->
+      Error(ParseErrorAtEnd("Expect ')' after expression."))
+    Ok(#(_, [token, ..])) ->
+      Error(ParseErrorAtToken(token, "Expect ')' after expression."))
+    Ok(#(_, [])) -> Error(ParseErrorAtEnd("Expect ')' after expression."))
+    Error(error) -> Error(error)
   }
 }

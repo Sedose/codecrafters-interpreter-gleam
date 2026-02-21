@@ -13,7 +13,7 @@ pattern matching on strings prefixes would work really well here and would mean 
 
 - Prefer pipeline style (`value |> transform |> consume`) over step-by-step temporary-variable flows like `result1 = func1(value)` then `result2 = func2(result1)`.
 
-- After task completion, run `gleam format`.
+- After task completion, follow this loop only: run `gleam format`, resolve errors if any, run `gleam check`, resolve errors if any, repeat until clean. Do not run `gleam check` multiple times without code changes.
 
 ## Cool prompts to enhance a project
 
@@ -43,3 +43,6 @@ Module-by-module:
   9. High cohesion: src/data_def.gleam
      Single responsibility: shared domain/ADT definitions.
 ```
+
+### Can `module_name` be simplified ?
+

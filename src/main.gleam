@@ -1,6 +1,6 @@
 import argv
 import ast_printer
-import data_def.{type Expr, type LiteralValue, type ParseError, type TokenizationResult}
+import data_def.{type Expr, type LiteralValue, TokenizationResult}
 import evaluator
 import external_things.{exit}
 import gleam/io
@@ -14,7 +14,7 @@ const exit_code_success = 0
 
 const exit_code_general_error = 1
 
-const exit_code_tokenization_error = 65
+const exit_code_language_error = 65
 
 const exit_code_runtime_error = 70
 
@@ -52,57 +52,45 @@ fn process_tokenize(contents: String) -> Int {
 
   case tokenization_result.errors {
     [] -> exit_code_success
-    _ -> exit_code_tokenization_error
+    _ -> exit_code_language_error
   }
 }
 
 fn process_parse(contents: String) -> Int {
-  let tokenization_result = tokenize(contents)
-
-  case tokenization_result.errors {
-    [] ->
-      case parse(tokenization_result.tokens) {
-        Ok(expression) -> {
-          expression |> ast_printer.print
-          exit_code_success
-        }
-        Error(error) -> {
-          error |> format_error |> io.println_error
-          exit_code_tokenization_error
-        }
-      }
-    errors -> {
-      errors |> print_errors
-      exit_code_tokenization_error
+  case contents |> tokenize_and_parse {
+    Ok(expression) -> {
+      expression |> ast_printer.print
+      exit_code_success
     }
+    Error(exit_code) -> exit_code
   }
 }
 
 fn process_evaluate(contents: String) -> Int {
-  contents |> tokenize |> evaluate_tokenization_result
+  case contents |> tokenize_and_parse {
+    Ok(expression) -> expression |> evaluator.evaluate |> resolve_evaluation
+    Error(exit_code) -> exit_code
+  }
 }
 
-fn evaluate_tokenization_result(tokenization_result: TokenizationResult) -> Int {
-  case tokenization_result.errors {
-    [] -> tokenization_result.tokens |> parse |> evaluate_parse_result
-    errors -> {
+fn tokenize_and_parse(contents: String) -> Result(Expr, Int) {
+  case tokenize(contents) {
+    TokenizationResult(tokens: tokens, errors: []) ->
+      case parse(tokens) {
+        Ok(expression) -> Ok(expression)
+        Error(error) -> {
+          error |> format_error |> io.println_error
+          Error(exit_code_language_error)
+        }
+      }
+    TokenizationResult(tokens: _, errors: errors) -> {
       errors |> print_errors
-      exit_code_tokenization_error
+      Error(exit_code_language_error)
     }
   }
 }
 
-fn evaluate_parse_result(parse_result: Result(Expr, ParseError)) -> Int {
-  case parse_result {
-    Ok(expression) -> expression |> evaluator.evaluate |> evaluate_runtime_result
-    Error(error) -> {
-      error |> format_error |> io.println_error
-      exit_code_tokenization_error
-    }
-  }
-}
-
-fn evaluate_runtime_result(evaluation_result: Result(LiteralValue, String)) -> Int {
+fn resolve_evaluation(evaluation_result: Result(LiteralValue, String)) -> Int {
   case evaluation_result {
     Ok(value) -> {
       value |> evaluator.format |> io.println
