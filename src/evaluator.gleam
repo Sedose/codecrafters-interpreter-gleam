@@ -24,6 +24,8 @@ fn evaluate_binary(
   case evaluate(left), evaluate(right), op {
     Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), AddOp ->
       Ok(NumberLiteral(left_number +. right_number))
+    Ok(StringLiteral(left_text)), Ok(StringLiteral(right_text)), AddOp ->
+      Ok(StringLiteral(left_text <> right_text))
     Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), SubtractOp ->
       Ok(NumberLiteral(left_number -. right_number))
     Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), MultiplyOp ->
