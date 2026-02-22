@@ -3,6 +3,7 @@ import data_def.{
   NilLiteral, NumberLiteral, StringLiteral, TrueLiteral, Unary, Variable,
 }
 import gleam/float
+import gleam/string
 
 pub fn evaluate(expression: Expr) -> Result(LiteralValue, String) {
   case expression {
@@ -19,7 +20,16 @@ pub fn format(value: LiteralValue) -> String {
     TrueLiteral -> "true"
     FalseLiteral -> "false"
     NilLiteral -> "nil"
-    NumberLiteral(number) -> float.to_string(number)
+    NumberLiteral(number) -> format_number(number)
     StringLiteral(text) -> text
+  }
+}
+
+fn format_number(number: Float) -> String {
+  let formatted = number |> float.to_string
+
+  case formatted |> string.ends_with(".0") {
+    True -> string.drop_end(formatted, 2)
+    False -> formatted
   }
 }
