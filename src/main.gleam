@@ -1,17 +1,20 @@
 import argv
 import ast_printer
 import data_def.{
-  type Expr, type LiteralValue, type Statement, type Token, TokenizationResult,
+  type Expr, type InterpretationResult, type LiteralValue, type Statement,
+  type Token, type TokenWithLine, Completed, Failed, RuntimeError,
+  TokenizationResult, TokenizationResultWithLines,
 }
 import evaluator
 import external_things.{exit}
+import gleam/int
 import gleam/io
 import gleam/list
 import parse_error_printer.{format_error}
 import parser.{parse, parse_program}
 import simplifile.{describe_error}
 import tokenization_printer.{print, print_errors}
-import tokenizer.{tokenize}
+import tokenizer.{tokenize, tokenize_with_lines}
 
 const exit_code_success = 0
 
@@ -95,10 +98,10 @@ fn tokenize_and_parse(contents: String) -> Result(Expr, Int) {
 }
 
 fn tokenize_and_parse_program(contents: String) -> Result(List(Statement), Int) {
-  case tokenize(contents) {
-    TokenizationResult(tokens: tokens, errors: []) ->
+  case tokenize_with_lines(contents) {
+    TokenizationResultWithLines(tokens: tokens, errors: []) ->
       tokens |> parse_program_tokens
-    TokenizationResult(tokens: _, errors: errors) -> {
+    TokenizationResultWithLines(tokens: _, errors: errors) -> {
       errors |> print_errors
       Error(exit_code_language_error)
     }
@@ -115,7 +118,9 @@ fn parse_tokens(tokens: List(Token)) -> Result(Expr, Int) {
   }
 }
 
-fn parse_program_tokens(tokens: List(Token)) -> Result(List(Statement), Int) {
+fn parse_program_tokens(
+  tokens: List(TokenWithLine),
+) -> Result(List(Statement), Int) {
   case parse_program(tokens) {
     Ok(statements) -> Ok(statements)
     Error(error) -> {
@@ -138,14 +143,15 @@ fn resolve_evaluation(evaluation_result: Result(LiteralValue, String)) -> Int {
   }
 }
 
-fn resolve_run_result(run_result: Result(List(String), String)) -> Int {
+fn resolve_run_result(run_result: InterpretationResult) -> Int {
   case run_result {
-    Ok(lines) -> {
+    Completed(lines) -> {
       lines |> list.map(io.println)
       exit_code_success
     }
-    Error(message) -> {
-      io.println_error(message <> "\n\n[line 1]")
+    Failed(outputs: outputs, error: RuntimeError(message: message, line: line)) -> {
+      outputs |> list.map(io.println)
+      io.println_error(message <> "\n\n[line " <> int.to_string(line) <> "]")
       exit_code_runtime_error
     }
   }

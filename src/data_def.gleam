@@ -40,6 +40,10 @@ pub type Token {
   Eof
 }
 
+pub type TokenWithLine {
+  TokenWithLine(token: Token, line: Int)
+}
+
 pub type UnaryOp {
   NotOp
   NegateOp
@@ -67,8 +71,8 @@ pub type Expr {
 }
 
 pub type Statement {
-  PrintStatement(expression: Expr)
-  ExpressionStatement(expression: Expr)
+  PrintStatement(line: Int, expression: Expr)
+  ExpressionStatement(line: Int, expression: Expr)
 }
 
 pub type LiteralValue {
@@ -86,6 +90,22 @@ pub type TokenizationError {
 
 pub type TokenizationResult {
   TokenizationResult(tokens: List(Token), errors: List(TokenizationError))
+}
+
+pub type TokenizationResultWithLines {
+  TokenizationResultWithLines(
+    tokens: List(TokenWithLine),
+    errors: List(TokenizationError),
+  )
+}
+
+pub type RuntimeError {
+  RuntimeError(message: String, line: Int)
+}
+
+pub type InterpretationResult {
+  Completed(outputs: List(String))
+  Failed(outputs: List(String), error: RuntimeError)
 }
 
 pub type ParseError {

@@ -1,10 +1,12 @@
 import data_def.{
-  type Token, type TokenizationError, type TokenizationResult, And, Bang,
+  type Token, type TokenWithLine, type TokenizationError,
+  type TokenizationResult, type TokenizationResultWithLines, And, Bang,
   BangEqual, Class, Comma, Dot, Else, Eof, Equal, EqualEqual, FalseToken, For,
   Fun, Greater, GreaterEqual, Identifier, If, LeftBrace, LeftParen, Less,
   LessEqual, Minus, NilToken, Number, Or, Plus, Print, Return, RightBrace,
-  RightParen, Semicolon, Slash, Star, String, Super, This, TokenizationResult,
-  TrueToken, UnrecognizedChar, UnterminatedString, Var, While,
+  RightParen, Semicolon, Slash, Star, String, Super, This, TokenWithLine,
+  TokenizationResult, TokenizationResultWithLines, TrueToken, UnrecognizedChar,
+  UnterminatedString, Var, While,
 }
 import gleam/float
 import gleam/int
@@ -14,20 +16,36 @@ import gleam/string
 import util.{is_alpha, is_alpha_numeric, is_digit, is_number_char}
 
 pub fn tokenize(source: String) -> TokenizationResult {
+  case tokenize_with_lines(source) {
+    TokenizationResultWithLines(tokens: tokens_with_lines, errors: errors) ->
+      TokenizationResult(
+        tokens: tokens_with_lines |> list.map(token_without_line),
+        errors: errors,
+      )
+  }
+}
+
+pub fn tokenize_with_lines(source: String) -> TokenizationResultWithLines {
   let graphemes = string.to_graphemes(source)
   scan(1, graphemes, [], [])
+}
+
+fn token_without_line(token_with_line: TokenWithLine) -> Token {
+  case token_with_line {
+    TokenWithLine(token, _) -> token
+  }
 }
 
 fn scan(
   line: Int,
   chars: List(String),
-  tokens_rev: List(Token),
+  tokens_rev: List(TokenWithLine),
   errors: List(TokenizationError),
-) -> TokenizationResult {
+) -> TokenizationResultWithLines {
   case chars {
     [] ->
-      TokenizationResult(
-        list.reverse([Eof, ..tokens_rev]),
+      TokenizationResultWithLines(
+        list.reverse([TokenWithLine(Eof, line), ..tokens_rev]),
         list.reverse(errors),
       )
     ["\r", "\n", ..rest] -> scan(line + 1, rest, tokens_rev, errors)
@@ -40,25 +58,49 @@ fn scan(
         rest |> list.drop_while(fn(ch) { ch != "\n" && ch != "\r" })
       scan(line, after_comment, tokens_rev, errors)
     }
-    ["!", "=", ..rest] -> scan(line, rest, [BangEqual, ..tokens_rev], errors)
-    ["=", "=", ..rest] -> scan(line, rest, [EqualEqual, ..tokens_rev], errors)
-    ["<", "=", ..rest] -> scan(line, rest, [LessEqual, ..tokens_rev], errors)
-    [">", "=", ..rest] -> scan(line, rest, [GreaterEqual, ..tokens_rev], errors)
-    ["!", ..rest] -> scan(line, rest, [Bang, ..tokens_rev], errors)
-    ["=", ..rest] -> scan(line, rest, [Equal, ..tokens_rev], errors)
-    ["<", ..rest] -> scan(line, rest, [Less, ..tokens_rev], errors)
-    [">", ..rest] -> scan(line, rest, [Greater, ..tokens_rev], errors)
-    ["(", ..rest] -> scan(line, rest, [LeftParen, ..tokens_rev], errors)
-    [")", ..rest] -> scan(line, rest, [RightParen, ..tokens_rev], errors)
-    ["{", ..rest] -> scan(line, rest, [LeftBrace, ..tokens_rev], errors)
-    ["}", ..rest] -> scan(line, rest, [RightBrace, ..tokens_rev], errors)
-    [",", ..rest] -> scan(line, rest, [Comma, ..tokens_rev], errors)
-    [".", ..rest] -> scan(line, rest, [Dot, ..tokens_rev], errors)
-    ["-", ..rest] -> scan(line, rest, [Minus, ..tokens_rev], errors)
-    ["+", ..rest] -> scan(line, rest, [Plus, ..tokens_rev], errors)
-    [";", ..rest] -> scan(line, rest, [Semicolon, ..tokens_rev], errors)
-    ["*", ..rest] -> scan(line, rest, [Star, ..tokens_rev], errors)
-    ["/", ..rest] -> scan(line, rest, [Slash, ..tokens_rev], errors)
+    ["!", "=", ..rest] ->
+      scan(line, rest, [TokenWithLine(BangEqual, line), ..tokens_rev], errors)
+    ["=", "=", ..rest] ->
+      scan(line, rest, [TokenWithLine(EqualEqual, line), ..tokens_rev], errors)
+    ["<", "=", ..rest] ->
+      scan(line, rest, [TokenWithLine(LessEqual, line), ..tokens_rev], errors)
+    [">", "=", ..rest] ->
+      scan(
+        line,
+        rest,
+        [TokenWithLine(GreaterEqual, line), ..tokens_rev],
+        errors,
+      )
+    ["!", ..rest] ->
+      scan(line, rest, [TokenWithLine(Bang, line), ..tokens_rev], errors)
+    ["=", ..rest] ->
+      scan(line, rest, [TokenWithLine(Equal, line), ..tokens_rev], errors)
+    ["<", ..rest] ->
+      scan(line, rest, [TokenWithLine(Less, line), ..tokens_rev], errors)
+    [">", ..rest] ->
+      scan(line, rest, [TokenWithLine(Greater, line), ..tokens_rev], errors)
+    ["(", ..rest] ->
+      scan(line, rest, [TokenWithLine(LeftParen, line), ..tokens_rev], errors)
+    [")", ..rest] ->
+      scan(line, rest, [TokenWithLine(RightParen, line), ..tokens_rev], errors)
+    ["{", ..rest] ->
+      scan(line, rest, [TokenWithLine(LeftBrace, line), ..tokens_rev], errors)
+    ["}", ..rest] ->
+      scan(line, rest, [TokenWithLine(RightBrace, line), ..tokens_rev], errors)
+    [",", ..rest] ->
+      scan(line, rest, [TokenWithLine(Comma, line), ..tokens_rev], errors)
+    [".", ..rest] ->
+      scan(line, rest, [TokenWithLine(Dot, line), ..tokens_rev], errors)
+    ["-", ..rest] ->
+      scan(line, rest, [TokenWithLine(Minus, line), ..tokens_rev], errors)
+    ["+", ..rest] ->
+      scan(line, rest, [TokenWithLine(Plus, line), ..tokens_rev], errors)
+    [";", ..rest] ->
+      scan(line, rest, [TokenWithLine(Semicolon, line), ..tokens_rev], errors)
+    ["*", ..rest] ->
+      scan(line, rest, [TokenWithLine(Star, line), ..tokens_rev], errors)
+    ["/", ..rest] ->
+      scan(line, rest, [TokenWithLine(Slash, line), ..tokens_rev], errors)
     [char, ..rest] -> {
       case is_digit(char) {
         True -> scan_number(line, [char, ..rest], tokens_rev, errors)
@@ -80,14 +122,19 @@ fn scan_string(
   line: Int,
   chars: List(String),
   literal_rev: List(String),
-  tokens_rev: List(Token),
+  tokens_rev: List(TokenWithLine),
   errors: List(TokenizationError),
-) -> TokenizationResult {
+) -> TokenizationResultWithLines {
   case chars {
     [] -> scan(line, chars, tokens_rev, [UnterminatedString(line), ..errors])
     ["\"", ..after_quote] -> {
       let literal = literal_rev |> list.reverse |> string.concat
-      scan(line, after_quote, [String(literal), ..tokens_rev], errors)
+      scan(
+        line,
+        after_quote,
+        [TokenWithLine(String(literal), line), ..tokens_rev],
+        errors,
+      )
     }
     ["\n", ..rest] ->
       scan_string(line + 1, rest, ["\n", ..literal_rev], tokens_rev, errors)
@@ -99,15 +146,18 @@ fn scan_string(
 fn scan_number(
   line: Int,
   chars: List(String),
-  tokens_rev: List(Token),
+  tokens_rev: List(TokenWithLine),
   errors: List(TokenizationError),
-) -> TokenizationResult {
+) -> TokenizationResultWithLines {
   let digits = list.take_while(chars, is_number_char)
   let remaining = list.drop_while(chars, is_number_char)
   let lexeme = string.concat(digits)
   case parse_number(lexeme) {
     Ok(value) -> {
-      let updated_tokens_rev = [Number(lexeme, value), ..tokens_rev]
+      let updated_tokens_rev = [
+        TokenWithLine(Number(lexeme, value), line),
+        ..tokens_rev
+      ]
       scan(line, remaining, updated_tokens_rev, errors)
     }
     Error(_) -> {
@@ -128,14 +178,14 @@ fn parse_number(lexeme: String) -> Result(Float, Nil) {
 fn scan_identifier(
   line: Int,
   chars: List(String),
-  tokens_rev: List(Token),
+  tokens_rev: List(TokenWithLine),
   errors: List(TokenizationError),
-) -> TokenizationResult {
+) -> TokenizationResultWithLines {
   let glyphs = list.take_while(chars, is_alpha_numeric)
   let remaining = list.drop_while(chars, is_alpha_numeric)
   let lexeme = string.concat(glyphs)
   let token = keyword_or_identifier(lexeme)
-  scan(line, remaining, [token, ..tokens_rev], errors)
+  scan(line, remaining, [TokenWithLine(token, line), ..tokens_rev], errors)
 }
 
 fn keyword_or_identifier(lexeme: String) -> Token {

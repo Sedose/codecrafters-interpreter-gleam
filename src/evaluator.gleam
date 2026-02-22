@@ -1,36 +1,53 @@
 import data_def.{
-  type BinaryOp, type Expr, type LiteralValue, type Statement, type UnaryOp,
-  AddOp, Binary, DivideOp, EqualEqualOp, ExpressionStatement, FalseLiteral,
+  type BinaryOp, type Expr, type InterpretationResult, type LiteralValue,
+  type RuntimeError, type Statement, type UnaryOp, AddOp, Binary, Completed,
+  DivideOp, EqualEqualOp, ExpressionStatement, Failed, FalseLiteral,
   GreaterEqualOp, GreaterOp, Grouping, LessEqualOp, LessOp, Literal, MultiplyOp,
   NegateOp, NilLiteral, NotEqualOp, NotOp, NumberLiteral, PrintStatement,
-  StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
+  RuntimeError, StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
 }
 import gleam/float
 import gleam/list
+import gleam/result
 import gleam/string
 
-pub fn interpret(statements: List(Statement)) -> Result(List(String), String) {
+pub fn interpret(statements: List(Statement)) -> InterpretationResult {
   interpret_statements(statements, [])
 }
 
 fn interpret_statements(
   statements: List(Statement),
   outputs_rev: List(String),
-) -> Result(List(String), String) {
+) -> InterpretationResult {
   case statements {
-    [] -> Ok(outputs_rev |> list.reverse)
-    [PrintStatement(expression), ..rest] ->
-      case evaluate(expression) {
-        Ok(value) ->
-          interpret_statements(rest, [value |> format, ..outputs_rev])
-        Error(error) -> Error(error)
-      }
-    [ExpressionStatement(expression), ..rest] ->
-      case evaluate(expression) {
-        Ok(_) -> interpret_statements(rest, outputs_rev)
-        Error(error) -> Error(error)
+    [] -> Completed(outputs_rev |> list.reverse)
+    [statement, ..rest] ->
+      case interpret_statement(statement, outputs_rev) {
+        Ok(next_outputs_rev) -> interpret_statements(rest, next_outputs_rev)
+        Error(error) ->
+          Failed(outputs: outputs_rev |> list.reverse, error: error)
       }
   }
+}
+
+fn interpret_statement(
+  statement: Statement,
+  outputs_rev: List(String),
+) -> Result(List(String), RuntimeError) {
+  case statement {
+    PrintStatement(line, expression) ->
+      evaluate(expression)
+      |> result.map(fn(value) { [value |> format, ..outputs_rev] })
+      |> result.map_error(runtime_error(line))
+    ExpressionStatement(line, expression) ->
+      evaluate(expression)
+      |> result.map(fn(_) { outputs_rev })
+      |> result.map_error(runtime_error(line))
+  }
+}
+
+fn runtime_error(line: Int) -> fn(String) -> RuntimeError {
+  fn(message: String) { RuntimeError(message: message, line: line) }
 }
 
 pub fn evaluate(expression: Expr) -> Result(LiteralValue, String) {
@@ -48,34 +65,82 @@ fn evaluate_binary(
   left: Expr,
   right: Expr,
 ) -> Result(LiteralValue, String) {
-  case evaluate(left), evaluate(right), op {
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), AddOp ->
+  case op {
+    AddOp -> evaluate_add(left, right)
+    SubtractOp ->
+      evaluate_binary_numbers(left, right, fn(left_number, right_number) {
+        NumberLiteral(left_number -. right_number)
+      })
+    MultiplyOp ->
+      evaluate_binary_numbers(left, right, fn(left_number, right_number) {
+        NumberLiteral(left_number *. right_number)
+      })
+    DivideOp ->
+      evaluate_binary_numbers(left, right, fn(left_number, right_number) {
+        NumberLiteral(left_number /. right_number)
+      })
+    GreaterOp ->
+      evaluate_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number >. right_number)
+      })
+    GreaterEqualOp ->
+      evaluate_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number >=. right_number)
+      })
+    LessOp ->
+      evaluate_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number <. right_number)
+      })
+    LessEqualOp ->
+      evaluate_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number <=. right_number)
+      })
+    EqualEqualOp -> evaluate_equality(left, right, True)
+    NotEqualOp -> evaluate_equality(left, right, False)
+  }
+}
+
+fn evaluate_add(left: Expr, right: Expr) -> Result(LiteralValue, String) {
+  case evaluate(left), evaluate(right) {
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)) ->
       Ok(NumberLiteral(left_number +. right_number))
-    Ok(StringLiteral(left_text)), Ok(StringLiteral(right_text)), AddOp ->
+    Ok(StringLiteral(left_text)), Ok(StringLiteral(right_text)) ->
       Ok(StringLiteral(left_text <> right_text))
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), SubtractOp ->
-      Ok(NumberLiteral(left_number -. right_number))
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), MultiplyOp ->
-      Ok(NumberLiteral(left_number *. right_number))
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), DivideOp ->
-      Ok(NumberLiteral(left_number /. right_number))
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), GreaterOp ->
-      Ok(bool_to_literal(left_number >. right_number))
-    Ok(NumberLiteral(left_number)),
-      Ok(NumberLiteral(right_number)),
-      GreaterEqualOp
-    -> Ok(bool_to_literal(left_number >=. right_number))
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), LessOp ->
-      Ok(bool_to_literal(left_number <. right_number))
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), LessEqualOp
-    -> Ok(bool_to_literal(left_number <=. right_number))
-    Ok(left_value), Ok(right_value), EqualEqualOp ->
-      Ok(bool_to_literal(left_value == right_value))
-    Ok(left_value), Ok(right_value), NotEqualOp ->
-      Ok(bool_to_literal(left_value != right_value))
-    Error(error), _, _ -> Error(error)
-    _, Error(error), _ -> Error(error)
-    _, _, _ -> Error("Operand must be a number.")
+    Error(error), _ -> Error(error)
+    _, Error(error) -> Error(error)
+    _, _ -> Error("Operands must be two numbers or two strings.")
+  }
+}
+
+fn evaluate_binary_numbers(
+  left: Expr,
+  right: Expr,
+  combine: fn(Float, Float) -> LiteralValue,
+) -> Result(LiteralValue, String) {
+  case evaluate(left), evaluate(right) {
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)) ->
+      Ok(combine(left_number, right_number))
+    Error(error), _ -> Error(error)
+    _, Error(error) -> Error(error)
+    _, _ -> Error("Operands must be numbers.")
+  }
+}
+
+fn evaluate_equality(
+  left: Expr,
+  right: Expr,
+  should_check_equal: Bool,
+) -> Result(LiteralValue, String) {
+  case evaluate(left), evaluate(right) {
+    Ok(left_value), Ok(right_value) ->
+      Ok(
+        bool_to_literal(case should_check_equal {
+          True -> left_value == right_value
+          False -> left_value != right_value
+        }),
+      )
+    Error(error), _ -> Error(error)
+    _, Error(error) -> Error(error)
   }
 }
 
