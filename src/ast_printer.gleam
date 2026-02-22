@@ -2,7 +2,7 @@ import data_def.{
   type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Binary,
   DivideOp, EqualEqualOp, FalseLiteral, GreaterEqualOp, GreaterOp, Grouping,
   LessEqualOp, LessOp, Literal, MultiplyOp, NegateOp, NilLiteral, NotEqualOp,
-  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary,
+  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
 }
 
 import gleam/float
@@ -18,6 +18,7 @@ fn format(expr: Expr) -> String {
   case expr {
     Literal(value) -> value |> format_literal
     Grouping(inner) -> "(group " <> format(inner) <> ")"
+    Variable(name) -> name
     Unary(op, right) ->
       "(" <> format_unary_op(op) <> " " <> format(right) <> ")"
     Binary(op, left, right) ->

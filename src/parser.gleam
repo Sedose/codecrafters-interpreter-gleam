@@ -2,11 +2,11 @@ import data_def.{
   type BinaryOp, type Expr, type OperatorParseResult, type ParseError,
   type Token, type UnaryOp, AddOp, Bang, BangEqual, Binary, DivideOp, Eof,
   EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater, GreaterEqual,
-  GreaterEqualOp, GreaterOp, Grouping, LeftParen, Less, LessEqual, LessEqualOp,
-  LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral, NilToken, NoOperator,
-  NotEqualOp, NotOp, Number, NumberLiteral, Operator, ParseErrorAtEnd,
-  ParseErrorAtToken, Plus, RightParen, Slash, Star, String, StringLiteral,
-  SubtractOp, TrueLiteral, TrueToken, Unary,
+  GreaterEqualOp, GreaterOp, Grouping, Identifier, LeftParen, Less, LessEqual,
+  LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral,
+  NilToken, NoOperator, NotEqualOp, NotOp, Number, NumberLiteral, Operator,
+  ParseErrorAtEnd, ParseErrorAtToken, Plus, RightParen, Slash, Star, String,
+  StringLiteral, SubtractOp, TrueLiteral, TrueToken, Unary, Variable,
 }
 
 pub fn parse(tokens: List(Token)) -> Result(Expr, ParseError) {
@@ -188,6 +188,7 @@ fn parse_primary(
     [NilToken, ..rest] -> Ok(#(Literal(NilLiteral), rest))
     [Number(_, value), ..rest] -> Ok(#(Literal(NumberLiteral(value)), rest))
     [String(s), ..rest] -> Ok(#(Literal(StringLiteral(s)), rest))
+    [Identifier(name), ..rest] -> Ok(#(Variable(name), rest))
     [LeftParen, ..after_lparen] -> parse_grouping(after_lparen)
     [Eof, ..] -> Error(ParseErrorAtEnd("Expect expression."))
     [token, ..] -> Error(ParseErrorAtToken(token, "Expect expression."))
