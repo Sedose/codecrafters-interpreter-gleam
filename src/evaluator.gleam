@@ -1,8 +1,8 @@
 import data_def.{
   type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Binary,
-  DivideOp, FalseLiteral, GreaterEqualOp, GreaterOp, Grouping, LessEqualOp,
-  LessOp, Literal, MultiplyOp, NegateOp, NilLiteral, NotOp, NumberLiteral,
-  StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
+  DivideOp, EqualEqualOp, FalseLiteral, GreaterEqualOp, GreaterOp, Grouping,
+  LessEqualOp, LessOp, Literal, MultiplyOp, NegateOp, NilLiteral, NotEqualOp,
+  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
 }
 import gleam/float
 import gleam/string
@@ -43,8 +43,10 @@ fn evaluate_binary(
       Ok(bool_to_literal(left_number <. right_number))
     Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), LessEqualOp
     -> Ok(bool_to_literal(left_number <=. right_number))
-    Ok(NumberLiteral(_)), Ok(NumberLiteral(_)), _ ->
-      Error("Unsupported expression for this stage.")
+    Ok(left_value), Ok(right_value), EqualEqualOp ->
+      Ok(bool_to_literal(left_value == right_value))
+    Ok(left_value), Ok(right_value), NotEqualOp ->
+      Ok(bool_to_literal(left_value != right_value))
     Error(error), _, _ -> Error(error)
     _, Error(error), _ -> Error(error)
     _, _, _ -> Error("Operand must be a number.")
