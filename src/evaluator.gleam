@@ -21,16 +21,16 @@ fn evaluate_binary(
   left: Expr,
   right: Expr,
 ) -> Result(LiteralValue, String) {
-  case evaluate(left), evaluate(right) {
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)) ->
-      case op {
-        MultiplyOp -> Ok(NumberLiteral(left_number *. right_number))
-        DivideOp -> Ok(NumberLiteral(left_number /. right_number))
-        _ -> Error("Unsupported expression for this stage.")
-      }
-    Error(error), _ -> Error(error)
-    _, Error(error) -> Error(error)
-    _, _ -> Error("Operand must be a number.")
+  case evaluate(left), evaluate(right), op {
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), MultiplyOp ->
+      Ok(NumberLiteral(left_number *. right_number))
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), DivideOp ->
+      Ok(NumberLiteral(left_number /. right_number))
+    Ok(NumberLiteral(_)), Ok(NumberLiteral(_)), _ ->
+      Error("Unsupported expression for this stage.")
+    Error(error), _, _ -> Error(error)
+    _, Error(error), _ -> Error(error)
+    _, _, _ -> Error("Operand must be a number.")
   }
 }
 
