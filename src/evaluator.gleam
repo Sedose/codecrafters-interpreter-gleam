@@ -1,7 +1,7 @@
 import data_def.{
-  type BinaryOp, type Expr, type LiteralValue, type UnaryOp, Binary, DivideOp,
-  FalseLiteral, Grouping, Literal, MultiplyOp, NegateOp, NilLiteral, NotOp,
-  NumberLiteral, StringLiteral, TrueLiteral, Unary, Variable,
+  type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Binary,
+  DivideOp, FalseLiteral, Grouping, Literal, MultiplyOp, NegateOp, NilLiteral,
+  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
 }
 import gleam/float
 import gleam/string
@@ -22,6 +22,10 @@ fn evaluate_binary(
   right: Expr,
 ) -> Result(LiteralValue, String) {
   case evaluate(left), evaluate(right), op {
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), AddOp ->
+      Ok(NumberLiteral(left_number +. right_number))
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), SubtractOp ->
+      Ok(NumberLiteral(left_number -. right_number))
     Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), MultiplyOp ->
       Ok(NumberLiteral(left_number *. right_number))
     Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), DivideOp ->
