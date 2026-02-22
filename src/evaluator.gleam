@@ -1,7 +1,7 @@
 import data_def.{
-  type Expr, type LiteralValue, type UnaryOp, Binary, FalseLiteral, Grouping,
-  Literal, NegateOp, NilLiteral, NotOp, NumberLiteral, StringLiteral,
-  TrueLiteral, Unary, Variable,
+  type BinaryOp, type Expr, type LiteralValue, type UnaryOp, Binary, DivideOp,
+  FalseLiteral, Grouping, Literal, MultiplyOp, NegateOp, NilLiteral, NotOp,
+  NumberLiteral, StringLiteral, TrueLiteral, Unary, Variable,
 }
 import gleam/float
 import gleam/string
@@ -12,7 +12,25 @@ pub fn evaluate(expression: Expr) -> Result(LiteralValue, String) {
     Grouping(inner) -> evaluate(inner)
     Variable(_) -> Error("Unsupported expression for this stage.")
     Unary(op, right) -> evaluate_unary(op, right)
-    Binary(_, _, _) -> Error("Unsupported expression for this stage.")
+    Binary(op, left, right) -> evaluate_binary(op, left, right)
+  }
+}
+
+fn evaluate_binary(
+  op: BinaryOp,
+  left: Expr,
+  right: Expr,
+) -> Result(LiteralValue, String) {
+  case evaluate(left), evaluate(right) {
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)) ->
+      case op {
+        MultiplyOp -> Ok(NumberLiteral(left_number *. right_number))
+        DivideOp -> Ok(NumberLiteral(left_number /. right_number))
+        _ -> Error("Unsupported expression for this stage.")
+      }
+    Error(error), _ -> Error(error)
+    _, Error(error) -> Error(error)
+    _, _ -> Error("Operand must be a number.")
   }
 }
 
