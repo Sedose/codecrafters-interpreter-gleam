@@ -50,17 +50,7 @@ fn parse_left_associative(
   parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
   parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
 ) -> Result(#(Expr, List(Token)), ParseError) {
-  tokens
-  |> parse_operand
-  |> resolve_left_operand(parse_operand, parse_operator)
-}
-
-fn resolve_left_operand(
-  parsed_operand: Result(#(Expr, List(Token)), ParseError),
-  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
-  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case parsed_operand {
+  case parse_operand(tokens) {
     Ok(#(left, rest)) ->
       parse_left_associative_tail(left, rest, parse_operand, parse_operator)
     Error(error) -> Error(error)
@@ -73,43 +63,19 @@ fn parse_left_associative_tail(
   parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
   parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
 ) -> Result(#(Expr, List(Token)), ParseError) {
-  tokens
-  |> parse_operator
-  |> resolve_left_operator(left, tokens, parse_operand, parse_operator)
-}
-
-fn resolve_left_operator(
-  parsed_operator: OperatorParseResult(BinaryOp),
-  left: Expr,
-  tokens: List(Token),
-  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
-  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case parsed_operator {
+  case parse_operator(tokens) {
     Operator(op, after_op) ->
-      after_op
-      |> parse_operand
-      |> build_left_associative(op, left, parse_operand, parse_operator)
+      case parse_operand(after_op) {
+        Ok(#(right, rest)) ->
+          parse_left_associative_tail(
+            Binary(op, left, right),
+            rest,
+            parse_operand,
+            parse_operator,
+          )
+        Error(error) -> Error(error)
+      }
     NoOperator -> Ok(#(left, tokens))
-  }
-}
-
-fn build_left_associative(
-  parsed_right_operand: Result(#(Expr, List(Token)), ParseError),
-  op: BinaryOp,
-  left: Expr,
-  parse_operand: fn(List(Token)) -> Result(#(Expr, List(Token)), ParseError),
-  parse_operator: fn(List(Token)) -> OperatorParseResult(BinaryOp),
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case parsed_right_operand {
-    Ok(#(right, rest)) ->
-      parse_left_associative_tail(
-        Binary(op, left, right),
-        rest,
-        parse_operand,
-        parse_operator,
-      )
-    Error(error) -> Error(error)
   }
 }
 
@@ -148,26 +114,13 @@ fn parse_factor_op(tokens: List(Token)) -> OperatorParseResult(BinaryOp) {
 }
 
 fn parse_unary(tokens: List(Token)) -> Result(#(Expr, List(Token)), ParseError) {
-  tokens |> parse_unary_prefix |> resolve_unary_prefix(tokens)
-}
-
-fn resolve_unary_prefix(
-  parsed_prefix: OperatorParseResult(UnaryOp),
-  tokens: List(Token),
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case parsed_prefix {
-    Operator(op, rest) -> rest |> parse_unary |> build_unary(op)
+  case parse_unary_prefix(tokens) {
+    Operator(op, rest) ->
+      case parse_unary(rest) {
+        Ok(#(expr, remaining)) -> Ok(#(Unary(op, expr), remaining))
+        Error(error) -> Error(error)
+      }
     NoOperator -> parse_primary(tokens)
-  }
-}
-
-fn build_unary(
-  parsed_unary: Result(#(Expr, List(Token)), ParseError),
-  op: UnaryOp,
-) -> Result(#(Expr, List(Token)), ParseError) {
-  case parsed_unary {
-    Ok(#(expr, remaining)) -> Ok(#(Unary(op, expr), remaining))
-    Error(error) -> Error(error)
   }
 }
 
