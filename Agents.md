@@ -15,14 +15,6 @@ pattern matching on strings prefixes would work really well here and would mean 
 
 - Obey denesting: when a function gets nested `case`/branching, extract focused helper functions to keep the top-level flow flat and readable.
 
-- After task completion, follow this pipeline only:
-  1. Run `gleam format`.
-  2. Resolve errors if any.
-  3. Run `gleam check`.
-  4. Resolve errors if any.
-  5. Repeat steps 1-4 until clean.
-  Do not run `gleam check` multiple times without code changes.
-
 ## Cool prompts to enhance a project
 
 ### evaluate all modules for high cohesion
@@ -53,4 +45,3 @@ Module-by-module:
 ```
 
 ### Can `module_name` be simplified ?
-

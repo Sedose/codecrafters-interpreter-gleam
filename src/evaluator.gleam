@@ -1,11 +1,37 @@
 import data_def.{
-  type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Binary,
-  DivideOp, EqualEqualOp, FalseLiteral, GreaterEqualOp, GreaterOp, Grouping,
-  LessEqualOp, LessOp, Literal, MultiplyOp, NegateOp, NilLiteral, NotEqualOp,
-  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
+  type BinaryOp, type Expr, type LiteralValue, type Statement, type UnaryOp,
+  AddOp, Binary, DivideOp, EqualEqualOp, ExpressionStatement, FalseLiteral,
+  GreaterEqualOp, GreaterOp, Grouping, LessEqualOp, LessOp, Literal, MultiplyOp,
+  NegateOp, NilLiteral, NotEqualOp, NotOp, NumberLiteral, PrintStatement,
+  StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
 }
 import gleam/float
+import gleam/list
 import gleam/string
+
+pub fn interpret(statements: List(Statement)) -> Result(List(String), String) {
+  interpret_statements(statements, [])
+}
+
+fn interpret_statements(
+  statements: List(Statement),
+  outputs_rev: List(String),
+) -> Result(List(String), String) {
+  case statements {
+    [] -> Ok(outputs_rev |> list.reverse)
+    [PrintStatement(expression), ..rest] ->
+      case evaluate(expression) {
+        Ok(value) ->
+          interpret_statements(rest, [value |> format, ..outputs_rev])
+        Error(error) -> Error(error)
+      }
+    [ExpressionStatement(expression), ..rest] ->
+      case evaluate(expression) {
+        Ok(_) -> interpret_statements(rest, outputs_rev)
+        Error(error) -> Error(error)
+      }
+  }
+}
 
 pub fn evaluate(expression: Expr) -> Result(LiteralValue, String) {
   case expression {

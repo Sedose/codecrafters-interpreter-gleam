@@ -1,13 +1,15 @@
 import data_def.{
   type BinaryOp, type Expr, type OperatorParseResult, type ParseError,
-  type Token, type UnaryOp, AddOp, Bang, BangEqual, Binary, DivideOp, Eof,
-  EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater, GreaterEqual,
-  GreaterEqualOp, GreaterOp, Grouping, Identifier, LeftParen, Less, LessEqual,
-  LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral,
-  NilToken, NoOperator, NotEqualOp, NotOp, Number, NumberLiteral, Operator,
-  ParseErrorAtEnd, ParseErrorAtToken, Plus, RightParen, Slash, Star, String,
+  type Statement, type Token, type UnaryOp, AddOp, Bang, BangEqual, Binary,
+  DivideOp, Eof, EqualEqual, EqualEqualOp, ExpressionStatement, FalseLiteral,
+  FalseToken, Greater, GreaterEqual, GreaterEqualOp, GreaterOp, Grouping,
+  Identifier, LeftParen, Less, LessEqual, LessEqualOp, LessOp, Literal, Minus,
+  MultiplyOp, NegateOp, NilLiteral, NilToken, NoOperator, NotEqualOp, NotOp,
+  Number, NumberLiteral, Operator, ParseErrorAtEnd, ParseErrorAtToken, Plus,
+  Print, PrintStatement, RightParen, Semicolon, Slash, Star, String,
   StringLiteral, SubtractOp, TrueLiteral, TrueToken, Unary, Variable,
 }
+import gleam/list
 
 pub fn parse(tokens: List(Token)) -> Result(Expr, ParseError) {
   case parse_expression(tokens) {
@@ -15,6 +17,64 @@ pub fn parse(tokens: List(Token)) -> Result(Expr, ParseError) {
     Ok(#(expr, [])) -> Ok(expr)
     Ok(#(_, [token, ..])) ->
       Error(ParseErrorAtToken(token, "Expect end of expression."))
+    Error(error) -> Error(error)
+  }
+}
+
+pub fn parse_program(tokens: List(Token)) -> Result(List(Statement), ParseError) {
+  parse_statements(tokens, [])
+}
+
+fn parse_statements(
+  tokens: List(Token),
+  statements_rev: List(Statement),
+) -> Result(List(Statement), ParseError) {
+  case tokens {
+    [Eof] -> Ok(statements_rev |> list.reverse)
+    [] -> Ok(statements_rev |> list.reverse)
+    _ ->
+      case parse_statement(tokens) {
+        Ok(#(statement, rest)) ->
+          parse_statements(rest, [statement, ..statements_rev])
+        Error(error) -> Error(error)
+      }
+  }
+}
+
+fn parse_statement(
+  tokens: List(Token),
+) -> Result(#(Statement, List(Token)), ParseError) {
+  case tokens {
+    [Print, ..after_print] -> parse_print_statement(after_print)
+    _ -> parse_expression_statement(tokens)
+  }
+}
+
+fn parse_print_statement(
+  tokens: List(Token),
+) -> Result(#(Statement, List(Token)), ParseError) {
+  case parse_expression(tokens) {
+    Ok(#(expression, [Semicolon, ..rest])) ->
+      Ok(#(PrintStatement(expression), rest))
+    Ok(#(_, [Eof, ..])) -> Error(ParseErrorAtEnd("Expect ';' after value."))
+    Ok(#(_, [token, ..])) ->
+      Error(ParseErrorAtToken(token, "Expect ';' after value."))
+    Ok(#(_, [])) -> Error(ParseErrorAtEnd("Expect ';' after value."))
+    Error(error) -> Error(error)
+  }
+}
+
+fn parse_expression_statement(
+  tokens: List(Token),
+) -> Result(#(Statement, List(Token)), ParseError) {
+  case parse_expression(tokens) {
+    Ok(#(expression, [Semicolon, ..rest])) ->
+      Ok(#(ExpressionStatement(expression), rest))
+    Ok(#(_, [Eof, ..])) ->
+      Error(ParseErrorAtEnd("Expect ';' after expression."))
+    Ok(#(_, [token, ..])) ->
+      Error(ParseErrorAtToken(token, "Expect ';' after expression."))
+    Ok(#(_, [])) -> Error(ParseErrorAtEnd("Expect ';' after expression."))
     Error(error) -> Error(error)
   }
 }

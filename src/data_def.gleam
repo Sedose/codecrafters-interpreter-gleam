@@ -66,6 +66,11 @@ pub type Expr {
   Binary(op: BinaryOp, left: Expr, right: Expr)
 }
 
+pub type Statement {
+  PrintStatement(expression: Expr)
+  ExpressionStatement(expression: Expr)
+}
+
 pub type LiteralValue {
   TrueLiteral
   FalseLiteral
