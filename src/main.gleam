@@ -100,7 +100,7 @@ fn resolve_evaluation(evaluation_result: Result(LiteralValue, String)) -> Int {
       exit_code_success
     }
     Error(message) -> {
-      message |> io.println_error
+      io.println_error(message <> "\n\n[line 1]")
       exit_code_runtime_error
     }
   }
