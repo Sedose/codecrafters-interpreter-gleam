@@ -1,7 +1,8 @@
 import data_def.{
   type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Binary,
-  DivideOp, FalseLiteral, Grouping, Literal, MultiplyOp, NegateOp, NilLiteral,
-  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
+  DivideOp, FalseLiteral, GreaterEqualOp, GreaterOp, Grouping, LessEqualOp,
+  LessOp, Literal, MultiplyOp, NegateOp, NilLiteral, NotOp, NumberLiteral,
+  StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
 }
 import gleam/float
 import gleam/string
@@ -32,11 +33,28 @@ fn evaluate_binary(
       Ok(NumberLiteral(left_number *. right_number))
     Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), DivideOp ->
       Ok(NumberLiteral(left_number /. right_number))
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), GreaterOp ->
+      Ok(bool_to_literal(left_number >. right_number))
+    Ok(NumberLiteral(left_number)),
+      Ok(NumberLiteral(right_number)),
+      GreaterEqualOp
+    -> Ok(bool_to_literal(left_number >=. right_number))
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), LessOp ->
+      Ok(bool_to_literal(left_number <. right_number))
+    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)), LessEqualOp
+    -> Ok(bool_to_literal(left_number <=. right_number))
     Ok(NumberLiteral(_)), Ok(NumberLiteral(_)), _ ->
       Error("Unsupported expression for this stage.")
     Error(error), _, _ -> Error(error)
     _, Error(error), _ -> Error(error)
     _, _, _ -> Error("Operand must be a number.")
+  }
+}
+
+fn bool_to_literal(value: Bool) -> LiteralValue {
+  case value {
+    True -> TrueLiteral
+    False -> FalseLiteral
   }
 }
 
