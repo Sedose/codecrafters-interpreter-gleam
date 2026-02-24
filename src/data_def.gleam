@@ -73,6 +73,7 @@ pub type Expr {
 pub type Statement {
   PrintStatement(line: Int, expression: Expr)
   ExpressionStatement(line: Int, expression: Expr)
+  VarStatement(line: Int, name: String, initializer: Expr)
 }
 
 pub type LiteralValue {

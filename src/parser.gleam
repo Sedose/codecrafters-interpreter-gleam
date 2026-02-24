@@ -1,14 +1,14 @@
 import data_def.{
   type BinaryOp, type Expr, type OperatorParseResult, type ParseError,
   type Statement, type Token, type TokenWithLine, type UnaryOp, AddOp, Bang,
-  BangEqual, Binary, DivideOp, Eof, EqualEqual, EqualEqualOp,
+  BangEqual, Binary, DivideOp, Eof, Equal, EqualEqual, EqualEqualOp,
   ExpressionStatement, FalseLiteral, FalseToken, Greater, GreaterEqual,
   GreaterEqualOp, GreaterOp, Grouping, Identifier, LeftParen, Less, LessEqual,
   LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral,
   NilToken, NoOperator, NotEqualOp, NotOp, Number, NumberLiteral, Operator,
   ParseErrorAtEnd, ParseErrorAtToken, Plus, Print, PrintStatement, RightParen,
   Semicolon, Slash, Star, String, StringLiteral, SubtractOp, TokenWithLine,
-  TrueLiteral, TrueToken, Unary, Variable,
+  TrueLiteral, TrueToken, Unary, Var, VarStatement, Variable,
 }
 import gleam/list
 
@@ -48,10 +48,45 @@ fn parse_statement(
   tokens: List(TokenWithLine),
 ) -> Result(#(Statement, List(TokenWithLine)), ParseError) {
   case tokens {
+    [TokenWithLine(Var, line), ..after_var] ->
+      parse_var_statement(line, after_var)
     [TokenWithLine(Print, line), ..after_print] ->
       parse_print_statement(line, after_print)
     [TokenWithLine(_, line), ..] -> parse_expression_statement(line, tokens)
     [] -> Error(ParseErrorAtEnd("Expect statement."))
+  }
+}
+
+fn parse_var_statement(
+  line: Int,
+  tokens: List(TokenWithLine),
+) -> Result(#(Statement, List(TokenWithLine)), ParseError) {
+  case tokens {
+    [TokenWithLine(Identifier(name), _), TokenWithLine(Semicolon, _), ..rest] ->
+      Ok(#(VarStatement(line, name, Literal(NilLiteral)), rest))
+    [TokenWithLine(Identifier(name), _), TokenWithLine(Equal, _), ..after_equal] ->
+      case
+        take_until_semicolon(
+          after_equal,
+          [],
+          "Expect ';' after variable declaration.",
+        )
+      {
+        Ok(#(initializer_tokens_with_lines, rest)) ->
+          case parse(initializer_tokens_with_lines |> to_tokens) {
+            Ok(initializer) ->
+              Ok(#(VarStatement(line, name, initializer), rest))
+            Error(error) -> Error(error)
+          }
+        Error(error) -> Error(error)
+      }
+    [TokenWithLine(Identifier(_), _), TokenWithLine(token, _), ..] ->
+      Error(ParseErrorAtToken(token, "Expect ';' after variable declaration."))
+    [TokenWithLine(Identifier(_), _)] ->
+      Error(ParseErrorAtEnd("Expect ';' after variable declaration."))
+    [TokenWithLine(token, _), ..] ->
+      Error(ParseErrorAtToken(token, "Expect variable name."))
+    [] -> Error(ParseErrorAtEnd("Expect variable name."))
   }
 }
 
