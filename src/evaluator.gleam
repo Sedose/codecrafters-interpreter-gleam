@@ -131,16 +131,13 @@ fn evaluate_equality(
   right: Expr,
   should_check_equal: Bool,
 ) -> Result(LiteralValue, String) {
-  case evaluate(left), evaluate(right) {
-    Ok(left_value), Ok(right_value) ->
-      Ok(
-        bool_to_literal(case should_check_equal {
-          True -> left_value == right_value
-          False -> left_value != right_value
-        }),
-      )
-    Error(error), _ -> Error(error)
-    _, Error(error) -> Error(error)
+  case evaluate(left), evaluate(right), should_check_equal {
+    Ok(left_value), Ok(right_value), True ->
+      Ok(bool_to_literal(left_value == right_value))
+    Ok(left_value), Ok(right_value), False ->
+      Ok(bool_to_literal(left_value != right_value))
+    Error(error), _, _ -> Error(error)
+    _, Error(error), _ -> Error(error)
   }
 }
 
@@ -159,18 +156,10 @@ fn evaluate_unary(op: UnaryOp, right: Expr) -> Result(LiteralValue, String) {
 }
 
 fn apply_unary(op: UnaryOp, value: LiteralValue) -> Result(LiteralValue, String) {
-  case op {
-    NotOp ->
-      case is_truthy(value) {
-        True -> Ok(FalseLiteral)
-        False -> Ok(TrueLiteral)
-      }
-
-    NegateOp ->
-      case value {
-        NumberLiteral(number) -> Ok(NumberLiteral(0.0 -. number))
-        _ -> Error("Operand must be a number.")
-      }
+  case op, value {
+    NotOp, _ -> Ok(bool_to_literal(!is_truthy(value)))
+    NegateOp, NumberLiteral(number) -> Ok(NumberLiteral(0.0 -. number))
+    NegateOp, _ -> Error("Operand must be a number.")
   }
 }
 
