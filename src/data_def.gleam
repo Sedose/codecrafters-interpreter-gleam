@@ -114,6 +114,13 @@ pub type ParseError {
   ParseErrorAtEnd(message: String)
 }
 
+pub const exit_code_general_error = 1
+
+pub type LanguageError {
+  TokenizationErrors(errors: List(TokenizationError))
+  ParsingError(error: ParseError)
+}
+
 pub type OperatorParseResult(op) {
   Operator(op: op, rest: List(Token))
   NoOperator
