@@ -1,4 +1,6 @@
-import data_def.{type Expr, type ParseError, type Statement, type Token, type TokenWithLine}
+import data_def.{
+  type Expr, type ParseError, type Statement, type Token, type TokenWithLine,
+}
 import parser/expression
 import parser/program
 

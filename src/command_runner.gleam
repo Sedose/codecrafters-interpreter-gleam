@@ -1,7 +1,7 @@
 import data_def.{
   type Expr, type LanguageError, type Statement, type Token, type TokenWithLine,
-  type TokenizationResult, ParsingError, TokenizationErrors,
-  TokenizationResult, TokenizationResultWithLines, exit_code_general_error,
+  type TokenizationResult, ParsingError, TokenizationErrors, TokenizationResult,
+  TokenizationResultWithLines, exit_code_general_error,
 }
 import evaluator
 import gleam/io

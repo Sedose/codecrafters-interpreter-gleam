@@ -1,11 +1,11 @@
 import data_def.{
-  type ParseError, type Statement, type Token, type TokenWithLine, Eof, Equal,
+  type ParseError, type Statement, type TokenWithLine, Eof, Equal,
   ExpressionStatement, Identifier, Literal, NilLiteral, ParseErrorAtEnd,
   ParseErrorAtToken, Print, PrintStatement, Semicolon, TokenWithLine, Var,
   VarStatement,
 }
 import gleam/list
-import parser/expression.{parse}
+import parser/expression.{parse_with_rest}
 
 pub fn parse_program(
   tokens: List(TokenWithLine),
@@ -47,31 +47,36 @@ fn parse_var_statement(
   tokens: List(TokenWithLine),
 ) -> Result(#(Statement, List(TokenWithLine)), ParseError) {
   case tokens {
-    [TokenWithLine(Identifier(name), _), TokenWithLine(Semicolon, _), ..rest] ->
-      Ok(#(VarStatement(line, name, Literal(NilLiteral)), rest))
-    [TokenWithLine(Identifier(name), _), TokenWithLine(Equal, _), ..after_equal] ->
-      case
-        take_until_semicolon(
-          after_equal,
-          [],
-          "Expect ';' after variable declaration.",
-        )
-      {
-        Ok(#(initializer_tokens_with_lines, rest)) ->
-          case parse(initializer_tokens_with_lines |> to_tokens) {
-            Ok(initializer) ->
-              Ok(#(VarStatement(line, name, initializer), rest))
-            Error(error) -> Error(error)
-          }
-        Error(error) -> Error(error)
-      }
-    [TokenWithLine(Identifier(_), _), TokenWithLine(token, _), ..] ->
-      Error(ParseErrorAtToken(token, "Expect ';' after variable declaration."))
-    [TokenWithLine(Identifier(_), _)] ->
-      Error(ParseErrorAtEnd("Expect ';' after variable declaration."))
+    [TokenWithLine(Identifier(name), _), ..after_name] ->
+      parse_var_initializer(line, name, after_name)
     [TokenWithLine(token, _), ..] ->
       Error(ParseErrorAtToken(token, "Expect variable name."))
     [] -> Error(ParseErrorAtEnd("Expect variable name."))
+  }
+}
+
+fn parse_var_initializer(
+  line: Int,
+  name: String,
+  tokens: List(TokenWithLine),
+) -> Result(#(Statement, List(TokenWithLine)), ParseError) {
+  case tokens {
+    [TokenWithLine(Semicolon, _), ..rest] ->
+      Ok(#(VarStatement(line, name, Literal(NilLiteral)), rest))
+    [TokenWithLine(Equal, _), ..after_equal] ->
+      case
+        parse_expression_and_expect_semicolon(
+          after_equal,
+          "Expect ';' after variable declaration.",
+        )
+      {
+        Ok(#(initializer, rest)) ->
+          Ok(#(VarStatement(line, name, initializer), rest))
+        Error(error) -> Error(error)
+      }
+    [TokenWithLine(token, _), ..] ->
+      Error(ParseErrorAtToken(token, "Expect ';' after variable declaration."))
+    [] -> Error(ParseErrorAtEnd("Expect ';' after variable declaration."))
   }
 }
 
@@ -83,12 +88,10 @@ fn parse_print_statement(
     [TokenWithLine(Semicolon, _), ..] ->
       Error(ParseErrorAtToken(Semicolon, "Expect expression."))
     _ ->
-      case take_until_semicolon(tokens, [], "Expect ';' after value.") {
-        Ok(#(expression_tokens_with_lines, rest)) ->
-          case parse(expression_tokens_with_lines |> to_tokens) {
-            Ok(expression) -> Ok(#(PrintStatement(line, expression), rest))
-            Error(error) -> Error(error)
-          }
+      case
+        parse_expression_and_expect_semicolon(tokens, "Expect ';' after value.")
+      {
+        Ok(#(expression, rest)) -> Ok(#(PrintStatement(line, expression), rest))
         Error(error) -> Error(error)
       }
   }
@@ -98,40 +101,30 @@ fn parse_expression_statement(
   line: Int,
   tokens: List(TokenWithLine),
 ) -> Result(#(Statement, List(TokenWithLine)), ParseError) {
-  case take_until_semicolon(tokens, [], "Expect ';' after expression.") {
-    Ok(#(expression_tokens_with_lines, rest)) ->
-      case parse(expression_tokens_with_lines |> to_tokens) {
-        Ok(expression) -> Ok(#(ExpressionStatement(line, expression), rest))
-        Error(error) -> Error(error)
-      }
+  case
+    parse_expression_and_expect_semicolon(
+      tokens,
+      "Expect ';' after expression.",
+    )
+  {
+    Ok(#(expression, rest)) ->
+      Ok(#(ExpressionStatement(line, expression), rest))
     Error(error) -> Error(error)
   }
 }
 
-fn take_until_semicolon(
+fn parse_expression_and_expect_semicolon(
   tokens: List(TokenWithLine),
-  statement_tokens_rev: List(TokenWithLine),
   missing_semicolon_message: String,
-) -> Result(#(List(TokenWithLine), List(TokenWithLine)), ParseError) {
-  case tokens {
-    [TokenWithLine(Semicolon, _), ..rest] ->
-      Ok(#(statement_tokens_rev |> list.reverse, rest))
-    [TokenWithLine(Eof, _)] -> Error(ParseErrorAtEnd(missing_semicolon_message))
-    [token, ..rest] ->
-      take_until_semicolon(
-        rest,
-        [token, ..statement_tokens_rev],
-        missing_semicolon_message,
-      )
-    [] -> Error(ParseErrorAtEnd(missing_semicolon_message))
+) -> Result(#(data_def.Expr, List(TokenWithLine)), ParseError) {
+  case parse_with_rest(tokens) {
+    Ok(#(expression, [TokenWithLine(Semicolon, _), ..rest])) ->
+      Ok(#(expression, rest))
+    Ok(#(_, [TokenWithLine(Eof, _)])) ->
+      Error(ParseErrorAtEnd(missing_semicolon_message))
+    Ok(#(_, [])) -> Error(ParseErrorAtEnd(missing_semicolon_message))
+    Ok(#(_, [TokenWithLine(token, _), ..])) ->
+      Error(ParseErrorAtToken(token, missing_semicolon_message))
+    Error(error) -> Error(error)
   }
-}
-
-fn to_tokens(tokens_with_lines: List(TokenWithLine)) -> List(Token) {
-  tokens_with_lines
-  |> list.map(fn(token_with_line) {
-    case token_with_line {
-      TokenWithLine(token, _) -> token
-    }
-  })
 }

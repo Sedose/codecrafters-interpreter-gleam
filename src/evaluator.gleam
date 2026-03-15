@@ -1,4 +1,6 @@
-import data_def.{type Expr, type InterpretationResult, type LiteralValue, type Statement}
+import data_def.{
+  type Expr, type InterpretationResult, type LiteralValue, type Statement,
+}
 import evaluator/expression
 import evaluator/format as literal_format
 import evaluator/program
