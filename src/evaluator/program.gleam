@@ -41,23 +41,25 @@ fn interpret_statement(
   case statement {
     PrintStatement(line, expression) ->
       evaluate_in(expression, state.environment)
-      |> result.map(fn(value) {
+      |> result.map(fn(#(value, environment)) {
         ProgramState(
           outputs_rev: [value |> format.format, ..state.outputs_rev],
-          environment: state.environment,
+          environment: environment,
         )
       })
       |> result.map_error(runtime_error(line))
     ExpressionStatement(line, expression) ->
       evaluate_in(expression, state.environment)
-      |> result.map(fn(_) { state })
+      |> result.map(fn(#(_, environment)) {
+        ProgramState(outputs_rev: state.outputs_rev, environment: environment)
+      })
       |> result.map_error(runtime_error(line))
     VarStatement(line, name, initializer) ->
       evaluate_in(initializer, state.environment)
-      |> result.map(fn(value) {
+      |> result.map(fn(#(value, environment)) {
         ProgramState(
           outputs_rev: state.outputs_rev,
-          environment: state.environment |> dict.insert(name, value),
+          environment: environment |> dict.insert(name, value),
         )
       })
       |> result.map_error(runtime_error(line))

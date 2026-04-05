@@ -1,12 +1,13 @@
 import data_def.{
   type BinaryOp, type Expr, type ParseError, type Token, type TokenWithLine,
-  type UnaryOp, AddOp, Bang, BangEqual, Binary, DivideOp, Eof, EqualEqual,
-  EqualEqualOp, FalseLiteral, FalseToken, Greater, GreaterEqual, GreaterEqualOp,
-  GreaterOp, Grouping, Identifier, LeftParen, Less, LessEqual, LessEqualOp,
-  LessOp, Literal, Minus, MultiplyOp, NegateOp, NilLiteral, NilToken, NotEqualOp,
-  NotOp, Number, NumberLiteral, ParseErrorAtEnd, ParseErrorAtToken, Plus,
-  RightParen, Slash, Star, String, StringLiteral, SubtractOp, TokenWithLine,
-  TrueLiteral, TrueToken, Unary, Variable,
+  type UnaryOp, AddOp, Assignment, Bang, BangEqual, Binary, DivideOp, Eof,
+  Equal, EqualEqual, EqualEqualOp, FalseLiteral, FalseToken, Greater,
+  GreaterEqual, GreaterEqualOp, GreaterOp, Grouping, Identifier, LeftParen,
+  Less, LessEqual, LessEqualOp, LessOp, Literal, Minus, MultiplyOp, NegateOp,
+  NilLiteral, NilToken, NotEqualOp, NotOp, Number, NumberLiteral,
+  ParseErrorAtEnd, ParseErrorAtToken, Plus, RightParen, Slash, Star, String,
+  StringLiteral, SubtractOp, TokenWithLine, TrueLiteral, TrueToken, Unary,
+  Variable,
 }
 import gleam/list
 import gleam/result
@@ -62,7 +63,32 @@ fn assert_expression_end(
 fn parse_expression(
   tokens: List(TokenWithLine),
 ) -> Result(#(Expr, List(TokenWithLine)), ParseError) {
+  parse_assignment(tokens)
+}
+
+fn parse_assignment(
+  tokens: List(TokenWithLine),
+) -> Result(#(Expr, List(TokenWithLine)), ParseError) {
   parse_equality(tokens)
+  |> result.try(continue_assignment)
+}
+
+fn continue_assignment(
+  parsed: #(Expr, List(TokenWithLine)),
+) -> Result(#(Expr, List(TokenWithLine)), ParseError) {
+  let #(left, rest) = parsed
+
+  case rest {
+    [TokenWithLine(Equal, _), ..after_equal] ->
+      parse_assignment(after_equal)
+      |> result.try(fn(#(value, remaining)) {
+        case left {
+          Variable(name) -> Ok(#(Assignment(name, value), remaining))
+          _ -> Error(ParseErrorAtToken(Equal, "Invalid assignment target."))
+        }
+      })
+    _ -> Ok(parsed)
+  }
 }
 
 fn parse_equality(

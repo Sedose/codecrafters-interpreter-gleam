@@ -1,10 +1,12 @@
 import data_def.{
-  type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Binary,
-  DivideOp, EqualEqualOp, FalseLiteral, GreaterEqualOp, GreaterOp, Grouping,
-  LessEqualOp, LessOp, Literal, MultiplyOp, NegateOp, NilLiteral, NotEqualOp,
-  NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral, Unary, Variable,
+  type BinaryOp, type Expr, type LiteralValue, type UnaryOp, AddOp, Assignment,
+  Binary, DivideOp, EqualEqualOp, FalseLiteral, GreaterEqualOp, GreaterOp,
+  Grouping, LessEqualOp, LessOp, Literal, MultiplyOp, NegateOp, NilLiteral,
+  NotEqualOp, NotOp, NumberLiteral, StringLiteral, SubtractOp, TrueLiteral,
+  Unary, Variable,
 }
 import gleam/dict
+import gleam/result
 
 pub type Environment =
   dict.Dict(String, LiteralValue)
@@ -15,22 +17,59 @@ pub fn empty_environment() -> Environment {
 
 pub fn evaluate(expression: Expr) -> Result(LiteralValue, String) {
   evaluate_in(expression, empty_environment())
+  |> result.map(fn(#(value, _)) { value })
 }
 
 pub fn evaluate_in(
   expression: Expr,
   environment: Environment,
-) -> Result(LiteralValue, String) {
+) -> Result(#(LiteralValue, Environment), String) {
   case expression {
-    Literal(value) -> Ok(value)
+    Literal(value) -> Ok(#(value, environment))
     Grouping(inner) -> evaluate_in(inner, environment)
-    Variable(name) ->
-      case environment |> dict.get(name) {
-        Ok(value) -> Ok(value)
-        Error(_) -> Error("Undefined variable '" <> name <> "'.")
-      }
+    Variable(name) -> lookup_variable(name, environment) |> with_environment(environment)
+    Assignment(name, value) -> evaluate_assignment(name, value, environment)
     Unary(op, right) -> evaluate_unary(op, right, environment)
     Binary(op, left, right) -> evaluate_binary(op, left, right, environment)
+  }
+}
+
+fn lookup_variable(
+  name: String,
+  environment: Environment,
+) -> Result(LiteralValue, String) {
+  case environment |> dict.get(name) {
+    Ok(value) -> Ok(value)
+    Error(_) -> Error("Undefined variable '" <> name <> "'.")
+  }
+}
+
+fn with_environment(
+  evaluation_result: Result(LiteralValue, String),
+  environment: Environment,
+) -> Result(#(LiteralValue, Environment), String) {
+  evaluation_result |> result.map(fn(value) { #(value, environment) })
+}
+
+fn evaluate_assignment(
+  name: String,
+  value: Expr,
+  environment: Environment,
+) -> Result(#(LiteralValue, Environment), String) {
+  evaluate_in(value, environment)
+  |> result.try(fn(#(value, environment)) {
+    assign_variable(name, value, environment)
+  })
+}
+
+fn assign_variable(
+  name: String,
+  value: LiteralValue,
+  environment: Environment,
+) -> Result(#(LiteralValue, Environment), String) {
+  case environment |> dict.get(name) {
+    Ok(_) -> Ok(#(value, environment |> dict.insert(name, value)))
+    Error(_) -> Error("Undefined variable '" <> name <> "'.")
   }
 }
 
@@ -39,125 +78,79 @@ fn evaluate_binary(
   left: Expr,
   right: Expr,
   environment: Environment,
+) -> Result(#(LiteralValue, Environment), String) {
+  evaluate_in(left, environment)
+  |> result.try(fn(#(left_value, environment)) {
+    evaluate_in(right, environment)
+    |> result.try(fn(#(right_value, environment)) {
+      apply_binary(op, left_value, right_value)
+      |> with_environment(environment)
+    })
+  })
+}
+
+fn apply_binary(
+  op: BinaryOp,
+  left: LiteralValue,
+  right: LiteralValue,
 ) -> Result(LiteralValue, String) {
   case op {
-    AddOp -> evaluate_add(left, right, environment)
+    AddOp -> apply_add(left, right)
     SubtractOp ->
-      evaluate_binary_numbers(
-        left,
-        right,
-        environment,
-        fn(left_number, right_number) {
-          NumberLiteral(left_number -. right_number)
-        },
-      )
+      apply_binary_numbers(left, right, fn(left_number, right_number) {
+        NumberLiteral(left_number -. right_number)
+      })
     MultiplyOp ->
-      evaluate_binary_numbers(
-        left,
-        right,
-        environment,
-        fn(left_number, right_number) {
-          NumberLiteral(left_number *. right_number)
-        },
-      )
+      apply_binary_numbers(left, right, fn(left_number, right_number) {
+        NumberLiteral(left_number *. right_number)
+      })
     DivideOp ->
-      evaluate_binary_numbers(
-        left,
-        right,
-        environment,
-        fn(left_number, right_number) {
-          NumberLiteral(left_number /. right_number)
-        },
-      )
+      apply_binary_numbers(left, right, fn(left_number, right_number) {
+        NumberLiteral(left_number /. right_number)
+      })
     GreaterOp ->
-      evaluate_binary_numbers(
-        left,
-        right,
-        environment,
-        fn(left_number, right_number) {
-          bool_to_literal(left_number >. right_number)
-        },
-      )
+      apply_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number >. right_number)
+      })
     GreaterEqualOp ->
-      evaluate_binary_numbers(
-        left,
-        right,
-        environment,
-        fn(left_number, right_number) {
-          bool_to_literal(left_number >=. right_number)
-        },
-      )
+      apply_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number >=. right_number)
+      })
     LessOp ->
-      evaluate_binary_numbers(
-        left,
-        right,
-        environment,
-        fn(left_number, right_number) {
-          bool_to_literal(left_number <. right_number)
-        },
-      )
+      apply_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number <. right_number)
+      })
     LessEqualOp ->
-      evaluate_binary_numbers(
-        left,
-        right,
-        environment,
-        fn(left_number, right_number) {
-          bool_to_literal(left_number <=. right_number)
-        },
-      )
-    EqualEqualOp -> evaluate_equality(left, right, environment, True)
-    NotEqualOp -> evaluate_equality(left, right, environment, False)
+      apply_binary_numbers(left, right, fn(left_number, right_number) {
+        bool_to_literal(left_number <=. right_number)
+      })
+    EqualEqualOp -> Ok(bool_to_literal(left == right))
+    NotEqualOp -> Ok(bool_to_literal(left != right))
   }
 }
 
-fn evaluate_add(
-  left: Expr,
-  right: Expr,
-  environment: Environment,
+fn apply_add(
+  left: LiteralValue,
+  right: LiteralValue,
 ) -> Result(LiteralValue, String) {
-  case evaluate_in(left, environment), evaluate_in(right, environment) {
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)) ->
+  case left, right {
+    NumberLiteral(left_number), NumberLiteral(right_number) ->
       Ok(NumberLiteral(left_number +. right_number))
-    Ok(StringLiteral(left_text)), Ok(StringLiteral(right_text)) ->
+    StringLiteral(left_text), StringLiteral(right_text) ->
       Ok(StringLiteral(left_text <> right_text))
-    Error(error), _ -> Error(error)
-    _, Error(error) -> Error(error)
     _, _ -> Error("Operands must be two numbers or two strings.")
   }
 }
 
-fn evaluate_binary_numbers(
-  left: Expr,
-  right: Expr,
-  environment: Environment,
+fn apply_binary_numbers(
+  left: LiteralValue,
+  right: LiteralValue,
   combine: fn(Float, Float) -> LiteralValue,
 ) -> Result(LiteralValue, String) {
-  case evaluate_in(left, environment), evaluate_in(right, environment) {
-    Ok(NumberLiteral(left_number)), Ok(NumberLiteral(right_number)) ->
+  case left, right {
+    NumberLiteral(left_number), NumberLiteral(right_number) ->
       Ok(combine(left_number, right_number))
-    Error(error), _ -> Error(error)
-    _, Error(error) -> Error(error)
     _, _ -> Error("Operands must be numbers.")
-  }
-}
-
-fn evaluate_equality(
-  left: Expr,
-  right: Expr,
-  environment: Environment,
-  should_check_equal: Bool,
-) -> Result(LiteralValue, String) {
-  case
-    evaluate_in(left, environment),
-    evaluate_in(right, environment),
-    should_check_equal
-  {
-    Ok(left_value), Ok(right_value), True ->
-      Ok(bool_to_literal(left_value == right_value))
-    Ok(left_value), Ok(right_value), False ->
-      Ok(bool_to_literal(left_value != right_value))
-    Error(error), _, _ -> Error(error)
-    _, Error(error), _ -> Error(error)
   }
 }
 
@@ -172,11 +165,12 @@ fn evaluate_unary(
   op: UnaryOp,
   right: Expr,
   environment: Environment,
-) -> Result(LiteralValue, String) {
-  case evaluate_in(right, environment) {
-    Ok(value) -> apply_unary(op, value)
-    Error(error) -> Error(error)
-  }
+) -> Result(#(LiteralValue, Environment), String) {
+  evaluate_in(right, environment)
+  |> result.try(fn(#(value, environment)) {
+    apply_unary(op, value)
+    |> with_environment(environment)
+  })
 }
 
 fn apply_unary(op: UnaryOp, value: LiteralValue) -> Result(LiteralValue, String) {

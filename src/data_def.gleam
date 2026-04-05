@@ -66,6 +66,7 @@ pub type Expr {
   Literal(value: LiteralValue)
   Grouping(inner: Expr)
   Variable(name: String)
+  Assignment(name: String, value: Expr)
   Unary(op: UnaryOp, right: Expr)
   Binary(op: BinaryOp, left: Expr, right: Expr)
 }
