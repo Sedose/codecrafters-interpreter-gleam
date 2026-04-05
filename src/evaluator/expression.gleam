@@ -17,7 +17,10 @@ pub fn empty_environment() -> Environment {
 
 pub fn evaluate(expression: Expr) -> Result(LiteralValue, String) {
   evaluate_in(expression, empty_environment())
-  |> result.map(fn(#(value, _)) { value })
+  |> result.map(fn(pair) {
+    let #(value, _) = pair
+    value
+  })
 }
 
 pub fn evaluate_in(
@@ -57,7 +60,8 @@ fn evaluate_assignment(
   environment: Environment,
 ) -> Result(#(LiteralValue, Environment), String) {
   evaluate_in(value, environment)
-  |> result.try(fn(#(value, environment)) {
+  |> result.try(fn(pair) {
+    let #(value, environment) = pair
     assign_variable(name, value, environment)
   })
 }
@@ -80,9 +84,11 @@ fn evaluate_binary(
   environment: Environment,
 ) -> Result(#(LiteralValue, Environment), String) {
   evaluate_in(left, environment)
-  |> result.try(fn(#(left_value, environment)) {
+  |> result.try(fn(left_pair) {
+    let #(left_value, environment) = left_pair
     evaluate_in(right, environment)
-    |> result.try(fn(#(right_value, environment)) {
+    |> result.try(fn(right_pair) {
+      let #(right_value, environment) = right_pair
       apply_binary(op, left_value, right_value)
       |> with_environment(environment)
     })
@@ -167,7 +173,8 @@ fn evaluate_unary(
   environment: Environment,
 ) -> Result(#(LiteralValue, Environment), String) {
   evaluate_in(right, environment)
-  |> result.try(fn(#(value, environment)) {
+  |> result.try(fn(pair) {
+    let #(value, environment) = pair
     apply_unary(op, value)
     |> with_environment(environment)
   })

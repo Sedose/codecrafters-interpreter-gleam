@@ -41,7 +41,8 @@ fn interpret_statement(
   case statement {
     PrintStatement(line, expression) ->
       evaluate_in(expression, state.environment)
-      |> result.map(fn(#(value, environment)) {
+      |> result.map(fn(pair) {
+        let #(value, environment) = pair
         ProgramState(
           outputs_rev: [value |> format.format, ..state.outputs_rev],
           environment: environment,
@@ -50,13 +51,15 @@ fn interpret_statement(
       |> result.map_error(runtime_error(line))
     ExpressionStatement(line, expression) ->
       evaluate_in(expression, state.environment)
-      |> result.map(fn(#(_, environment)) {
+      |> result.map(fn(pair) {
+        let #(_, environment) = pair
         ProgramState(outputs_rev: state.outputs_rev, environment: environment)
       })
       |> result.map_error(runtime_error(line))
     VarStatement(line, name, initializer) ->
       evaluate_in(initializer, state.environment)
-      |> result.map(fn(#(value, environment)) {
+      |> result.map(fn(pair) {
+        let #(value, environment) = pair
         ProgramState(
           outputs_rev: state.outputs_rev,
           environment: environment |> dict.insert(name, value),

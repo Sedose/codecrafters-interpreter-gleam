@@ -81,7 +81,8 @@ fn continue_assignment(
   case rest {
     [TokenWithLine(Equal, _), ..after_equal] ->
       parse_assignment(after_equal)
-      |> result.try(fn(#(value, remaining)) {
+      |> result.try(fn(pair) {
+        let #(value, remaining) = pair
         case left {
           Variable(name) -> Ok(#(Assignment(name, value), remaining))
           _ -> Error(ParseErrorAtToken(Equal, "Invalid assignment target."))
