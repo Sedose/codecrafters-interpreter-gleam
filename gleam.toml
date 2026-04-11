@@ -11,4 +11,3 @@ simplifile = "2.3.0"
 argv = "1.0.2"
 
 [dev-dependencies]
-gleeunit = "1.6.1"
